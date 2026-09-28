@@ -36,7 +36,7 @@ export default async function TenantPage({
         {services?.map((service) => (
           <Link
             key={service.id}
-            href={`/tenant/${subdomain}/book?service=${service.id}`}
+            href={`/book?service=${service.id}`}
             style={{
               border: '1px solid #ddd',
               borderRadius: 8,
