@@ -27,6 +27,7 @@ export default function BookingForm({
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState('')
 
@@ -62,8 +63,8 @@ export default function BookingForm({
   }, [selectedStaffId, selectedDate, selectedStaff, service.duration_minutes])
 
   async function handleConfirm() {
-    if (!selectedSlot || !name || !phone) {
-      setError('Please fill in your name and phone number.')
+    if (!selectedSlot || !name || !phone || !email) {
+      setError('Please fill in your name, phone number, and email.')
       return
     }
     setError('')
@@ -79,6 +80,7 @@ export default function BookingForm({
       service_id: service.id,
       customer_name: name,
       customer_phone: phone,
+      customer_email: email,
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
     })
@@ -97,6 +99,7 @@ export default function BookingForm({
         <p>
           {service.name} with {selectedStaff?.name} on {selectedDate} at {selectedSlot}.
         </p>
+        <p>A confirmation has been noted for {email}.</p>
       </div>
     )
   }
@@ -166,6 +169,15 @@ export default function BookingForm({
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              style={{ display: 'block', marginTop: 4, padding: 8, width: '100%' }}
+            />
+          </label>
+          <label style={{ display: 'block', marginBottom: '1rem' }}>
+            Email address:
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={{ display: 'block', marginTop: 4, padding: 8, width: '100%' }}
             />
           </label>
