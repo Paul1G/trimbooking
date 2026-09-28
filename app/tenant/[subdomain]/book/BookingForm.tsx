@@ -43,7 +43,7 @@ export default function BookingForm({
       const dayEnd = new Date(selectedDate + 'T23:59:59')
 
       const { data: existingBookings } = await supabase
-        .from('bookings')
+        .from('available_slots')
         .select('start_time, end_time')
         .eq('staff_id', selectedStaff.id)
         .gte('start_time', dayStart.toISOString())
