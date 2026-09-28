@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,12 +19,44 @@ export default async function TenantPage({
 
   if (!tenant) notFound()
 
+  const { data: services } = await supabase
+    .from('services')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .order('price')
+
   return (
-    <main style={{ padding: '3rem', textAlign: 'center' }}>
+    <main style={{ padding: '3rem', maxWidth: 600, margin: '0 auto' }}>
       <h1 style={{ color: tenant.brand_color, fontSize: '2.5rem' }}>
         {tenant.name}
       </h1>
-      <p>Booking coming soon.</p>
+
+      <h2 style={{ marginTop: '2rem' }}>Book an appointment</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+        {services?.map((service) => (
+          <Link
+            key={service.id}
+            href={`/tenant/${subdomain}/book?service=${service.id}`}
+            style={{
+              border: '1px solid #ddd',
+              borderRadius: 8,
+              padding: '1rem',
+              textDecoration: 'none',
+              color: 'inherit',
+              display: 'flex',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <strong>{service.name}</strong>
+              <div style={{ fontSize: '0.9rem', color: '#666' }}>
+                {service.duration_minutes} min
+              </div>
+            </div>
+            <div>£{service.price}</div>
+          </Link>
+        ))}
+      </div>
     </main>
   )
 }
