@@ -30,10 +30,17 @@ export default async function BookPage({
 
   if (!service) notFound()
 
+  const { data: staffLinks } = await supabase
+    .from('staff_services')
+    .select('staff_id')
+    .eq('service_id', service.id)
+
+  const staffIds = (staffLinks || []).map((l) => l.staff_id)
+
   const { data: staff } = await supabase
     .from('staff')
     .select('*')
-    .eq('tenant_id', tenant.id)
+    .in('id', staffIds)
 
   return (
     <main style={{ padding: '2rem', maxWidth: 600, margin: '0 auto' }}>
