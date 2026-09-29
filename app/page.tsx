@@ -1,69 +1,119 @@
-import Image from "next/image";
+import Link from "next/link";
+import "./home.css";
+
+const DEMO_URL = "https://lipstick-lashes-and-locks.trimbooking.co.uk";
+
+const features = [
+  {
+    icon: "🔗",
+    title: "Your own booking page",
+    description:
+      "Every shop gets a branded page at yourshop.trimbooking.co.uk where customers pick a service, staff member and time — no phone calls needed.",
+  },
+  {
+    icon: "🎨",
+    title: "Your logo & colours",
+    description:
+      "Add your logo and brand colour once in the dashboard, and it carries through your booking page, staff profiles and confirmation emails.",
+  },
+  {
+    icon: "📅",
+    title: "Staff calendars",
+    description:
+      "Set each team member's working hours and holidays. TrimBooking only offers times that are actually free.",
+  },
+  {
+    icon: "✅",
+    title: "Accept or decline requests",
+    description:
+      "New bookings land as requests in your dashboard. Approve or decline with one click, right from your calendar or list view.",
+  },
+  {
+    icon: "✉️",
+    title: "Automatic emails",
+    description:
+      "Customers get an email the moment they request a slot, and another the moment you confirm or decline it. No manual chasing.",
+  },
+  {
+    icon: "🧾",
+    title: "Services & pricing",
+    description:
+      "List your services with prices and durations, and assign them to the right staff members in minutes.",
+  },
+];
+
+const steps = [
+  {
+    title: "Set up your shop",
+    description: "Add your services, staff, opening hours and branding.",
+  },
+  {
+    title: "Share your link",
+    description: "Send customers to yourshop.trimbooking.co.uk or add it to Instagram and Google.",
+  },
+  {
+    title: "Manage bookings",
+    description: "Accept, decline or reschedule requests from one simple dashboard.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="home">
+      <nav className="home-nav">
+        <span className="logo">TrimBooking</span>
+        <a href="mailto:hello@trimbooking.co.uk" className="nav-cta">Get started</a>
+      </nav>
+
+      <header className="home-hero">
+        <h1>Online booking, built for barbershops &amp; salons</h1>
+        <p>
+          Give your shop its own branded booking page. Customers book online in
+          seconds, and you manage every appointment from one simple dashboard.
+        </p>
+        <div className="home-hero-actions">
+          <a href="mailto:hello@trimbooking.co.uk" className="btn-dark">Get started</a>
+          <Link href={DEMO_URL} className="btn-outline">See a live example</Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      <section className="home-section home-section-soft">
+        <div className="home-eyebrow">Everything included</div>
+        <h2 className="home-section-title">Built for how your shop actually runs</h2>
+        <div className="feature-grid">
+          {features.map((f) => (
+            <div key={f.title} className="feature-card">
+              <div className="feature-icon">{f.icon}</div>
+              <h3>{f.title}</h3>
+              <p>{f.description}</p>
+            </div>
+          ))}
         </div>
-      </main>
+      </section>
+
+      <section className="home-section">
+        <div className="home-eyebrow">How it works</div>
+        <h2 className="home-section-title">Up and running in three steps</h2>
+        <div className="steps-list">
+          {steps.map((s, i) => (
+            <div key={s.title} className="step">
+              <div className="step-num">{i + 1}</div>
+              <h3>{s.title}</h3>
+              <p>{s.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-cta">
+        <h2>Ready to stop taking bookings by phone?</h2>
+        <p>Get your shop set up with its own booking page — no cost to try it out.</p>
+        <a href="mailto:hello@trimbooking.co.uk" className="btn-dark">Get started</a>
+      </section>
+
+      <footer className="home-footer">
+        © {new Date().getFullYear()} TrimBooking
+      </footer>
     </div>
   );
 }

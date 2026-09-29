@@ -92,6 +92,12 @@ export default function DashboardPage() {
               <div className="card-sub">Block out staff holidays or shop-wide closures</div>
             </div>
           </Link>
+          <Link href="/dashboard/branding" className="card">
+            <div>
+              <div className="card-title">Branding</div>
+              <div className="card-sub">Set your logo and brand color</div>
+            </div>
+          </Link>
         </div>
 
         <button

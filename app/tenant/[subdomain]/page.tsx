@@ -29,9 +29,12 @@ export default async function TenantPage({
 
   return (
     <div className="tenant-app" style={{ ['--brand' as any]: tenant.brand_color }}>
-      <TenantNav name={tenant.name} />
+      <TenantNav name={tenant.name} logoUrl={tenant.logo_url} />
       <div className="tenant-container">
         <div className="tenant-hero">
+          {tenant.logo_url && (
+            <img src={tenant.logo_url} alt={tenant.name} className="hero-logo" />
+          )}
           <h1>{tenant.name}</h1>
           <p>Choose a service to book your appointment</p>
         </div>

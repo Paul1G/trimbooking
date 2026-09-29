@@ -28,7 +28,7 @@ export default async function TeamPage({
 
   return (
     <div className="tenant-app" style={{ ['--brand' as any]: tenant.brand_color }}>
-      <TenantNav name={tenant.name} />
+      <TenantNav name={tenant.name} logoUrl={tenant.logo_url} />
       <div className="tenant-container">
         <div className="tenant-hero">
           <h1>Meet the Team</h1>
