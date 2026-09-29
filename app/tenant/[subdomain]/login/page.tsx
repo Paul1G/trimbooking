@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   async function handleLogin() {
     setLoading(true)
@@ -43,6 +44,23 @@ export default function LoginPage() {
     }
 
     router.push('/dashboard')
+  }
+
+  async function handleReset() {
+    if (!email) {
+      setError('Enter your email above first, then click Forgot password')
+      return
+    }
+    setError('')
+    const redirectTo = window.location.origin + '/tenant/' + params.subdomain + '/reset-password'
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    })
+    if (resetError) {
+      setError(resetError.message)
+      return
+    }
+    setResetSent(true)
   }
 
   return (
@@ -78,6 +96,16 @@ export default function LoginPage() {
         <button className="btn-primary" onClick={handleLogin} disabled={loading}>
           {loading ? 'Logging in...' : 'Log in'}
         </button>
+
+        <p style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
+          {resetSent ? (
+            <span style={{ color: '#166534' }}>Check your email for a reset link.</span>
+          ) : (
+            <a href="#" onClick={(e) => { e.preventDefault(); handleReset() }} style={{ color: '#666' }}>
+              Forgot password?
+            </a>
+          )}
+        </p>
       </div>
     </div>
   )
