@@ -18,11 +18,13 @@ function isValidUKPhone(phone: string): boolean {
 
 export default function BookingForm({
   tenantId,
+  tenantName,
   service,
   staffList,
   shopOpeningHours,
 }: {
   tenantId: string
+  tenantName: string
   service: Service
   staffList: Staff[]
   shopOpeningHours: any
@@ -123,6 +125,24 @@ export default function BookingForm({
       setError('Something went wrong: ' + insertError.message)
       return
     }
+
+    // Fire the confirmation email, but don't block the UI on it
+    fetch('/api/send-booking-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'requested',
+        tenantName,
+        customerEmail: email,
+        customerName: name,
+        serviceName: service.name,
+        staffName: selectedStaff?.name,
+        startTime: startTime.toISOString(),
+      }),
+    }).catch(() => {
+      // Booking already succeeded in the database; a failed email shouldn't block the user
+    })
+
     setConfirmed(true)
   }
 

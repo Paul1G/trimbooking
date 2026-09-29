@@ -42,6 +42,7 @@ export default function BookingsPage() {
   const router = useRouter()
   const params = useParams()
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [tenantName, setTenantName] = useState('')
   const [brandColor, setBrandColor] = useState('#000000')
   const [bookings, setBookings] = useState<Booking[]>([])
   const [checking, setChecking] = useState(true)
@@ -71,6 +72,7 @@ export default function BookingsPage() {
       }
 
       setTenantId(tenant.id)
+      setTenantName(tenant.name)
       setBrandColor(tenant.brand_color)
       await loadBookings(tenant.id)
       setChecking(false)
@@ -89,6 +91,8 @@ export default function BookingsPage() {
 
   async function updateStatus(id: string, status: string) {
     if (!tenantId) return
+    const booking = bookings.find((b) => b.id === id)
+
     const { error } = await supabase
       .from('bookings')
       .update({ status })
@@ -99,6 +103,23 @@ export default function BookingsPage() {
       alert(error.message)
       return
     }
+
+    if (booking && (status === 'confirmed' || status === 'declined' || status === 'cancelled')) {
+      fetch('/api/send-booking-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: status,
+          tenantName,
+          customerEmail: booking.customer_email,
+          customerName: booking.customer_name,
+          serviceName: booking.services?.name,
+          staffName: booking.staff?.name,
+          startTime: booking.start_time,
+        }),
+      }).catch(() => {})
+    }
+
     setSelected(null)
     await loadBookings(tenantId)
   }
