@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { FONT_OPTIONS, fontFamilyCss, googleFontHref } from '@/lib/branding'
 import '../../tenant.css'
 
 export default function BrandingPage() {
@@ -13,6 +14,9 @@ export default function BrandingPage() {
   const [tenantName, setTenantName] = useState('')
   const [brandColor, setBrandColor] = useState('#000000')
   const [logoUrl, setLogoUrl] = useState('')
+  const [fontFamily, setFontFamily] = useState('system')
+  const [textColor, setTextColor] = useState('#1a1a1a')
+  const [backgroundColor, setBackgroundColor] = useState('#fafafa')
   const [checking, setChecking] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -43,6 +47,9 @@ export default function BrandingPage() {
       setTenantName(tenant.name)
       setBrandColor(tenant.brand_color || '#000000')
       setLogoUrl(tenant.logo_url || '')
+      setFontFamily(tenant.font_family || 'system')
+      setTextColor(tenant.text_color || '#1a1a1a')
+      setBackgroundColor(tenant.background_color || '#fafafa')
       setChecking(false)
     }
     load()
@@ -112,6 +119,9 @@ export default function BrandingPage() {
       .update({
         brand_color: brandColor,
         logo_url: logoUrl || null,
+        font_family: fontFamily,
+        text_color: textColor,
+        background_color: backgroundColor,
       })
       .eq('id', tenantId)
 
@@ -190,7 +200,7 @@ export default function BrandingPage() {
           </div>
 
           <div className="field-group">
-            <label className="field-label">Brand color</label>
+            <label className="field-label">Accent color (buttons &amp; highlights)</label>
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
               <input
                 type="color"
@@ -204,6 +214,87 @@ export default function BrandingPage() {
                 onChange={(e) => setBrandColor(e.target.value)}
                 style={{ maxWidth: 140 }}
               />
+            </div>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label">Font</label>
+            <select
+              className="field-input"
+              value={fontFamily}
+              onChange={(e) => setFontFamily(e.target.value)}
+            >
+              {FONT_OPTIONS.map((f) => (
+                <option key={f.id} value={f.id}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label">Background color</label>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <input
+                type="color"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                style={{ width: 48, height: 40, padding: 0, border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}
+              />
+              <input
+                className="field-input"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                style={{ maxWidth: 140 }}
+              />
+            </div>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label">Text color</label>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <input
+                type="color"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+                style={{ width: 48, height: 40, padding: 0, border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}
+              />
+              <input
+                className="field-input"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+                style={{ maxWidth: 140 }}
+              />
+            </div>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" style={{ marginBottom: '0.6rem' }}>Preview</label>
+            {googleFontHref(fontFamily) && (
+              <link rel="stylesheet" href={googleFontHref(fontFamily)!} />
+            )}
+            <div
+              style={{
+                padding: '1.25rem',
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                background: backgroundColor,
+                color: textColor,
+                fontFamily: fontFamilyCss(fontFamily),
+              }}
+            >
+              <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.3rem' }}>
+                {tenantName || 'Your Shop Name'}
+              </div>
+              <div style={{ fontSize: '0.9rem', marginBottom: '0.9rem' }}>
+                Choose a service to book your appointment
+              </div>
+              <span
+                style={{
+                  display: 'inline-block', padding: '0.5rem 1rem', borderRadius: 8,
+                  background: brandColor, color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+                }}
+              >
+                Book now
+              </span>
             </div>
           </div>
 

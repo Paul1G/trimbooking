@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import TenantNav from '../TenantNav'
+import { tenantBrandStyle, googleFontHref } from '@/lib/branding'
 import '../tenant.css'
 
 export const dynamic = 'force-dynamic'
@@ -26,8 +27,11 @@ export default async function TeamPage({
     .select('*')
     .eq('tenant_id', tenant.id)
 
+  const fontHref = googleFontHref(tenant.font_family)
+
   return (
-    <div className="tenant-app" style={{ ['--brand' as any]: tenant.brand_color }}>
+    <div className="tenant-app" style={tenantBrandStyle(tenant) as any}>
+      {fontHref && <link rel="stylesheet" href={fontHref} />}
       <TenantNav name={tenant.name} logoUrl={tenant.logo_url} />
       <div className="tenant-container">
         <div className="tenant-hero">
