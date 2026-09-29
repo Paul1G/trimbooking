@@ -59,11 +59,24 @@ export default function BookingForm({
         .lte('start_time', dayEnd.toISOString())
         .neq('status', 'cancelled')
 
+      const { data: staffHolidays } = await supabase
+        .from('staff_holidays')
+        .select('start_date, end_date')
+        .eq('staff_id', selectedStaff.id)
+
+      const { data: shopHolidays } = await supabase
+        .from('staff_holidays')
+        .select('start_date, end_date')
+        .is('staff_id', null)
+        .eq('tenant_id', tenantId)
+
       const daySlots = getSlotsForDay(
         new Date(selectedDate + 'T12:00:00'),
         selectedStaff.working_hours,
         service.duration_minutes,
-        existingBookings || []
+        existingBookings || [],
+        staffHolidays || [],
+        shopHolidays || []
       )
       setSlots(daySlots)
       setLoading(false)

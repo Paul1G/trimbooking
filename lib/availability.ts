@@ -1,18 +1,31 @@
-// Generates available time slots for a staff member on a given date,
-// based on their working hours and any existing bookings that day.
-
 type WorkingHours = Record<string, [string, string]>
+type HolidayRange = { start_date: string; end_date: string }
+
+function dateStr(d: Date): string {
+  return d.toISOString().split('T')[0]
+}
+
+export function isClosedByHoliday(date: Date, holidays: HolidayRange[]): boolean {
+  const d = dateStr(date)
+  return holidays.some((h) => d >= h.start_date && d <= h.end_date)
+}
 
 export function getSlotsForDay(
   date: Date,
   workingHours: WorkingHours,
   durationMinutes: number,
-  existingBookings: { start_time: string; end_time: string }[]
+  existingBookings: { start_time: string; end_time: string }[],
+  staffHolidays: HolidayRange[] = [],
+  shopHolidays: HolidayRange[] = []
 ): string[] {
+  if (isClosedByHoliday(date, staffHolidays) || isClosedByHoliday(date, shopHolidays)) {
+    return []
+  }
+
   const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
   const dayKey = dayNames[date.getDay()]
   const hours = workingHours[dayKey]
-  if (!hours) return [] // closed that day
+  if (!hours) return []
 
   const [openTime, closeTime] = hours
   const [openH, openM] = openTime.split(':').map(Number)
@@ -24,7 +37,7 @@ export function getSlotsForDay(
   dayEnd.setHours(closeH, closeM, 0, 0)
 
   const slots: string[] = []
-  const slotLength = 15 // check every 15 minutes for a possible start time
+  const slotLength = 15
 
   for (
     let t = new Date(dayStart);
