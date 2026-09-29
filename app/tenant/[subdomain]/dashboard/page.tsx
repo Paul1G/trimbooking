@@ -74,12 +74,12 @@ export default function DashboardPage() {
               <div className="card-sub">Manage your team</div>
             </div>
           </Link>
-          <div className="card" style={{ cursor: 'default' }}>
+          <Link href="/dashboard/bookings" className="card">
             <div>
               <div className="card-title">Bookings</div>
-              <div className="card-sub">View and manage appointments (coming next)</div>
+              <div className="card-sub">View and manage appointments</div>
             </div>
-          </div>
+          </Link>
         </div>
 
         <button
