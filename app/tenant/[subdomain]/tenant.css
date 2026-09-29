@@ -1,0 +1,263 @@
+.tenant-app {
+  --brand: #1a1a1a;
+  --bg: #fafafa;
+  --card-bg: #ffffff;
+  --border: #e8e8e8;
+  --text: #1a1a1a;
+  --text-muted: #6b6b6b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text);
+}
+
+.tenant-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.25rem 2rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tenant-nav a {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
+
+.tenant-nav a:hover {
+  opacity: 1;
+}
+
+.tenant-nav .brand {
+  color: var(--brand);
+  font-size: 1.1rem;
+  opacity: 1;
+  margin-right: auto;
+}
+
+.tenant-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.tenant-hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.tenant-hero h1 {
+  font-size: 2.25rem;
+  margin: 0 0 0.5rem;
+  color: var(--brand);
+  letter-spacing: -0.02em;
+}
+
+.tenant-hero p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.4rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+
+.card-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.card-price {
+  font-weight: 700;
+  color: var(--brand);
+  white-space: nowrap;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatar-fallback {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.avatar-lg {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-lg-fallback {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 2.2rem;
+}
+
+.profile-header {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin: 1.5rem 0 2rem;
+}
+
+.profile-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: var(--brand);
+}
+
+.profile-header p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+}
+
+.back-link {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--text);
+}
+
+.section-title {
+  font-size: 1.2rem;
+  margin: 2.5rem 0 1rem;
+  color: var(--text);
+}
+
+.bio {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.field-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: var(--card-bg);
+}
+
+.field-input:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.field-group {
+  margin-bottom: 1.2rem;
+}
+
+.slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.slot-btn {
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
+}
+
+.slot-btn.selected {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.btn-primary {
+  padding: 0.8rem 1.6rem;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirm-box {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}

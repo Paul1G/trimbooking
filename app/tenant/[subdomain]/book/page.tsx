@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import BookingForm from './BookingForm'
+import TenantNav from '../TenantNav'
+import '../tenant.css'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,15 +45,16 @@ export default async function BookPage({
     .in('id', staffIds)
 
   return (
-    <main style={{ padding: '2rem', maxWidth: 600, margin: '0 auto' }}>
-      <h1 style={{ color: tenant.brand_color }}>{tenant.name}</h1>
-      <h2>{service.name} — £{service.price} ({service.duration_minutes} min)</h2>
+    <div className="tenant-app" style={{ ['--brand' as any]: tenant.brand_color }}>
+      <TenantNav name={tenant.name} />
+      <div className="tenant-container">
+        <div className="tenant-hero">
+          <h1>{service.name}</h1>
+          <p>£{service.price} · {service.duration_minutes} min</p>
+        </div>
 
-      <BookingForm
-        tenantId={tenant.id}
-        service={service}
-        staffList={staff || []}
-      />
-    </main>
+        <BookingForm tenantId={tenant.id} service={service} staffList={staff || []} />
+      </div>
+    </div>
   )
 }

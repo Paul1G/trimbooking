@@ -13,11 +13,8 @@ function isValidEmail(email: string): boolean {
 
 function isValidUKPhone(phone: string): boolean {
   const cleaned = phone.replace(/[\s\-()]/g, '')
-  // UK mobile: 07xxx xxxxxx or +447xxx xxxxxx
-  // UK landline: 01xxx/02xxx xxxxxx or +441xxx/+442xxx xxxxxx
   return /^(?:(?:\+44|0)(?:7\d{9}|1\d{9}|2\d{9}|3\d{9}))$/.test(cleaned)
 }
-
 
 export default function BookingForm({
   tenantId,
@@ -79,6 +76,14 @@ export default function BookingForm({
       setError('Please fill in your name, phone number, and email.')
       return
     }
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+    if (!isValidUKPhone(phone)) {
+      setError('Please enter a valid UK phone number, e.g. 07123 456789 or 0131 281 1942.')
+      return
+    }
     setError('')
 
     const [h, m] = selectedSlot.split(':').map(Number)
@@ -106,60 +111,49 @@ export default function BookingForm({
 
   if (confirmed) {
     return (
-      <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f0fff0', borderRadius: 8 }}>
-        <h3>Booking confirmed!</h3>
-        <p>
-          {service.name} with {selectedStaff?.name} on {selectedDate} at {selectedSlot}.
-        </p>
-        <p>A confirmation has been noted for {email}.</p>
+      <div className="confirm-box">
+        <h3 style={{ marginTop: 0 }}>Booking confirmed!</h3>
+        <p>{service.name} with {selectedStaff?.name} on {selectedDate} at {selectedSlot}.</p>
+        <p style={{ marginBottom: 0, color: '#166534' }}>A confirmation has been noted for {email}.</p>
       </div>
     )
   }
 
   return (
-    <div style={{ marginTop: '2rem' }}>
-      <label style={{ display: 'block', marginBottom: '1rem' }}>
-        Staff member:
+    <div>
+      <div className="field-group">
+        <label className="field-label">Staff member</label>
         <select
+          className="field-input"
           value={selectedStaffId}
           onChange={(e) => setSelectedStaffId(e.target.value)}
-          style={{ display: 'block', marginTop: 4, padding: 8, width: '100%' }}
         >
           {staffList.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name} — {s.role}
-            </option>
+            <option key={s.id} value={s.id}>{s.name} — {s.role}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label style={{ display: 'block', marginBottom: '1rem' }}>
-        Date:
+      <div className="field-group">
+        <label className="field-label">Date</label>
         <input
           type="date"
+          className="field-input"
           value={selectedDate}
           min={new Date().toISOString().split('T')[0]}
           onChange={(e) => setSelectedDate(e.target.value)}
-          style={{ display: 'block', marginTop: 4, padding: 8, width: '100%' }}
         />
-      </label>
+      </div>
 
-      <h3>Available times</h3>
+      <h2 className="section-title" style={{ marginTop: '1.5rem' }}>Available times</h2>
       {loading && <p>Loading...</p>}
       {!loading && slots.length === 0 && <p>No availability that day. Try another date.</p>}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      <div className="slot-grid">
         {slots.map((slot) => (
           <button
             key={slot}
+            className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
             onClick={() => setSelectedSlot(slot)}
-            style={{
-              padding: '8px 14px',
-              borderRadius: 6,
-              border: selectedSlot === slot ? '2px solid #333' : '1px solid #ccc',
-              background: selectedSlot === slot ? '#333' : '#fff',
-              color: selectedSlot === slot ? '#fff' : '#000',
-              cursor: 'pointer',
-            }}
           >
             {slot}
           </button>
@@ -168,38 +162,20 @@ export default function BookingForm({
 
       {selectedSlot && (
         <div style={{ marginTop: '2rem' }}>
-          <label style={{ display: 'block', marginBottom: '1rem' }}>
-            Your name:
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              style={{ display: 'block', marginTop: 4, padding: 8, width: '100%' }}
-            />
-          </label>
-          <label style={{ display: 'block', marginBottom: '1rem' }}>
-            Phone number:
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              style={{ display: 'block', marginTop: 4, padding: 8, width: '100%' }}
-            />
-          </label>
-          <label style={{ display: 'block', marginBottom: '1rem' }}>
-            Email address:
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ display: 'block', marginTop: 4, padding: 8, width: '100%' }}
-            />
-          </label>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <button
-            onClick={handleConfirm}
-            style={{ padding: '10px 20px', background: '#333', color: '#fff', borderRadius: 6, border: 'none' }}
-          >
-            Confirm booking
-          </button>
+          <div className="field-group">
+            <label className="field-label">Your name</label>
+            <input className="field-input" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="field-group">
+            <label className="field-label">Phone number</label>
+            <input className="field-input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div className="field-group">
+            <label className="field-label">Email address</label>
+            <input type="email" className="field-input" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          {error && <p className="error-text">{error}</p>}
+          <button className="btn-primary" onClick={handleConfirm}>Confirm booking</button>
         </div>
       )}
     </div>
