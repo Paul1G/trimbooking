@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 import '../tenant.css'
 
 export default function DashboardPage() {
@@ -61,12 +62,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="card-list">
-          <div className="card" style={{ cursor: 'default' }}>
+          <Link href="/dashboard/services" className="card">
             <div>
               <div className="card-title">Services</div>
-              <div className="card-sub">Manage what you offer (coming next)</div>
+              <div className="card-sub">Manage what you offer</div>
             </div>
-          </div>
+          </Link>
           <div className="card" style={{ cursor: 'default' }}>
             <div>
               <div className="card-title">Staff</div>

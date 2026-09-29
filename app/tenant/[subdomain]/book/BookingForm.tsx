@@ -98,6 +98,7 @@ export default function BookingForm({
       customer_name: name,
       customer_phone: phone,
       customer_email: email,
+      status: 'pending',
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
     })
@@ -112,8 +113,9 @@ export default function BookingForm({
   if (confirmed) {
     return (
       <div className="confirm-box">
-        <h3 style={{ marginTop: 0 }}>Booking confirmed!</h3>
+        <h3 style={{ marginTop: 0 }}>Booking request sent!</h3>
         <p>{service.name} with {selectedStaff?.name} on {selectedDate} at {selectedSlot}.</p>
+        <p style={{ color: '#666' }}>The shop will confirm your appointment shortly.</p>
         <p style={{ marginBottom: 0, color: '#166534' }}>A confirmation has been noted for {email}.</p>
       </div>
     )
