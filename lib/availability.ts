@@ -12,7 +12,8 @@ export function isClosedByHoliday(date: Date, holidays: HolidayRange[]): boolean
 
 export function getSlotsForDay(
   date: Date,
-  workingHours: WorkingHours,
+  staffWorkingHours: WorkingHours,
+  shopOpeningHours: WorkingHours,
   durationMinutes: number,
   existingBookings: { start_time: string; end_time: string }[],
   staffHolidays: HolidayRange[] = [],
@@ -24,17 +25,29 @@ export function getSlotsForDay(
 
   const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
   const dayKey = dayNames[date.getDay()]
-  const hours = workingHours[dayKey]
-  if (!hours) return []
 
-  const [openTime, closeTime] = hours
-  const [openH, openM] = openTime.split(':').map(Number)
-  const [closeH, closeM] = closeTime.split(':').map(Number)
+  const staffHours = staffWorkingHours[dayKey]
+  const shopHours = shopOpeningHours[dayKey]
+
+  // Staff not scheduled, or shop closed, that day
+  if (!staffHours || !shopHours) return []
+
+  // The window is the overlap of staff hours and shop hours — whichever is tighter wins
+  const [staffOpenH, staffOpenM] = staffHours[0].split(':').map(Number)
+  const [staffCloseH, staffCloseM] = staffHours[1].split(':').map(Number)
+  const [shopOpenH, shopOpenM] = shopHours[0].split(':').map(Number)
+  const [shopCloseH, shopCloseM] = shopHours[1].split(':').map(Number)
 
   const dayStart = new Date(date)
-  dayStart.setHours(openH, openM, 0, 0)
   const dayEnd = new Date(date)
-  dayEnd.setHours(closeH, closeM, 0, 0)
+
+  const openMins = Math.max(staffOpenH * 60 + staffOpenM, shopOpenH * 60 + shopOpenM)
+  const closeMins = Math.min(staffCloseH * 60 + staffCloseM, shopCloseH * 60 + shopCloseM)
+
+  if (openMins >= closeMins) return [] // no overlap between staff hours and shop hours
+
+  dayStart.setHours(0, openMins, 0, 0)
+  dayEnd.setHours(0, closeMins, 0, 0)
 
   const slots: string[] = []
   const slotLength = 15

@@ -20,10 +20,12 @@ export default function BookingForm({
   tenantId,
   service,
   staffList,
+  shopOpeningHours,
 }: {
   tenantId: string
   service: Service
   staffList: Staff[]
+  shopOpeningHours: any
 }) {
   const [selectedStaffId, setSelectedStaffId] = useState(staffList[0]?.id || '')
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -73,6 +75,7 @@ export default function BookingForm({
       const daySlots = getSlotsForDay(
         new Date(selectedDate + 'T12:00:00'),
         selectedStaff.working_hours,
+        shopOpeningHours || {},
         service.duration_minutes,
         existingBookings || [],
         staffHolidays || [],
