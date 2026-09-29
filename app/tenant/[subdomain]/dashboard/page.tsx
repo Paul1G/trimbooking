@@ -80,6 +80,18 @@ export default function DashboardPage() {
               <div className="card-sub">View and manage appointments</div>
             </div>
           </Link>
+          <Link href="/dashboard/hours" className="card">
+            <div>
+              <div className="card-title">Opening Hours</div>
+              <div className="card-sub">Set your shop's opening days and times</div>
+            </div>
+          </Link>
+          <Link href="/dashboard/holidays" className="card">
+            <div>
+              <div className="card-title">Holidays &amp; Closures</div>
+              <div className="card-sub">Block out staff holidays or shop-wide closures</div>
+            </div>
+          </Link>
         </div>
 
         <button
