@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import TenantNav from './TenantNav'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,9 @@ export default async function TenantPage({
     .order('price')
 
   return (
-    <main style={{ padding: '3rem', maxWidth: 600, margin: '0 auto' }}>
+    <main style={{ maxWidth: 600, margin: '0 auto' }}>
+      <TenantNav brandColor={tenant.brand_color} />
+      <div style={{ padding: '0 3rem 3rem' }}>
       <h1 style={{ color: tenant.brand_color, fontSize: '2.5rem' }}>
         {tenant.name}
       </h1>
@@ -56,6 +59,7 @@ export default async function TenantPage({
             <div>£{service.price}</div>
           </Link>
         ))}
+      </div>
       </div>
     </main>
   )
