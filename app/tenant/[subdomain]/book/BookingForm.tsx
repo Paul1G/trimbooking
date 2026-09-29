@@ -7,6 +7,18 @@ import { getSlotsForDay } from '@/lib/availability'
 type Staff = { id: string; name: string; role: string; working_hours: any }
 type Service = { id: string; name: string; duration_minutes: number; price: number }
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function isValidUKPhone(phone: string): boolean {
+  const cleaned = phone.replace(/[\s\-()]/g, '')
+  // UK mobile: 07xxx xxxxxx or +447xxx xxxxxx
+  // UK landline: 01xxx/02xxx xxxxxx or +441xxx/+442xxx xxxxxx
+  return /^(?:(?:\+44|0)(?:7\d{9}|1\d{9}|2\d{9}|3\d{9}))$/.test(cleaned)
+}
+
+
 export default function BookingForm({
   tenantId,
   service,
