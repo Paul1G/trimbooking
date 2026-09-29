@@ -16,6 +16,7 @@ export default function BrandingPage() {
   const [checking, setChecking] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -46,6 +47,59 @@ export default function BrandingPage() {
     }
     load()
   }, [params.subdomain, router])
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !tenantId) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Please choose an image smaller than 2MB.')
+      return
+    }
+
+    setUploading(true)
+    setError('')
+    setSaved(false)
+
+    const ext = file.name.split('.').pop()
+    const path = `${tenantId}/logo-${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('logos')
+      .upload(path, file, { upsert: true, cacheControl: '3600' })
+
+    if (uploadError) {
+      setUploading(false)
+      setError('Upload failed: ' + uploadError.message)
+      return
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('logos').getPublicUrl(path)
+    const publicUrl = publicUrlData.publicUrl
+
+    setLogoUrl(publicUrl)
+
+    // Save immediately so the upload isn't lost if they navigate away before clicking Save
+    const { error: updateError } = await supabase
+      .from('tenants')
+      .update({ logo_url: publicUrl })
+      .eq('id', tenantId)
+
+    setUploading(false)
+
+    if (updateError) {
+      setError('Uploaded, but failed to save: ' + updateError.message)
+      return
+    }
+    setSaved(true)
+
+    // Reset the file input so choosing the same file again still fires onChange
+    e.target.value = ''
+  }
 
   async function handleSave() {
     if (!tenantId) return
@@ -92,23 +146,48 @@ export default function BrandingPage() {
 
         <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
           <div className="field-group">
-            <label className="field-label">Logo URL (optional)</label>
-            <input
-              className="field-input"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="Paste the public URL from Supabase Storage"
-            />
-          </div>
+            <label className="field-label">Logo</label>
 
-          {logoUrl && (
-            <div style={{ margin: '0 0 1.2rem' }}>
-              <div className="field-label" style={{ marginBottom: '0.6rem' }}>Preview</div>
-              <div style={{ padding: '1rem', background: '#fafafa', border: '1px solid var(--border)', borderRadius: 10 }}>
-                <img src={logoUrl} alt={tenantName} className="brand-logo" style={{ height: 40 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+              <div
+                style={{
+                  width: 72, height: 72, borderRadius: 10, background: '#fafafa',
+                  border: '1px solid var(--border)', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', overflow: 'hidden', flexShrink: 0,
+                }}
+              >
+                {logoUrl ? (
+                  <img src={logoUrl} alt={tenantName} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>No logo</span>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="logo-upload"
+                  style={{
+                    display: 'inline-block', padding: '0.6rem 1.1rem', borderRadius: 8,
+                    border: '1px solid var(--border)', background: '#fff', cursor: uploading ? 'default' : 'pointer',
+                    fontSize: '0.88rem', fontWeight: 600, opacity: uploading ? 0.6 : 1,
+                  }}
+                >
+                  {uploading ? 'Uploading...' : logoUrl ? 'Replace logo' : 'Upload logo'}
+                </label>
+                <input
+                  id="logo-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  disabled={uploading}
+                  style={{ display: 'none' }}
+                />
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                  PNG or JPG, up to 2MB
+                </div>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="field-group">
             <label className="field-label">Brand color</label>
