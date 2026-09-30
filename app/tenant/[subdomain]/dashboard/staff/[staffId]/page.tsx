@@ -55,10 +55,12 @@ export default function StaffCalendarPage() {
   const [selectedDate, setSelectedDate] = useState(() => toDateStr(new Date()))
   const [dayBookings, setDayBookings] = useState<Booking[]>([])
   const [loadingDay, setLoadingDay] = useState(false)
+  const [dayError, setDayError] = useState('')
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [weekBookings, setWeekBookings] = useState<Booking[]>([])
   const [loadingWeek, setLoadingWeek] = useState(false)
+  const [weekError, setWeekError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -125,6 +127,7 @@ export default function StaffCalendarPage() {
     })
 
     setDayBookings((!error && data) || [])
+    setDayError(error ? error.message : '')
     setLoadingDay(false)
   }
 
@@ -144,6 +147,7 @@ export default function StaffCalendarPage() {
     })
 
     setWeekBookings((!error && data) || [])
+    setWeekError(error ? error.message : '')
     setLoadingWeek(false)
   }
 
@@ -266,7 +270,12 @@ export default function StaffCalendarPage() {
             </div>
 
             {loadingDay && <p>Loading...</p>}
-            {!loadingDay && dayBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this day.</p>}
+            {dayError && (
+              <p style={{ color: '#991b1b', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '0.75rem 1rem' }}>
+                Couldn&apos;t load this day: {dayError}
+              </p>
+            )}
+            {!loadingDay && !dayError && dayBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this day.</p>}
 
             <div className="card-list">
               {dayBookings.map((b) => bookingCard(b))}
@@ -297,7 +306,12 @@ export default function StaffCalendarPage() {
             </div>
 
             {loadingWeek && <p>Loading...</p>}
-            {!loadingWeek && weekBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this week.</p>}
+            {weekError && (
+              <p style={{ color: '#991b1b', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '0.75rem 1rem' }}>
+                Couldn&apos;t load this week: {weekError}
+              </p>
+            )}
+            {!loadingWeek && !weekError && weekBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this week.</p>}
 
             {!loadingWeek && weekDays.map((day) => {
               const dStr = toDateStr(day)
