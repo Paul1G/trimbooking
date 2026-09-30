@@ -77,13 +77,14 @@ export default function Home() {
       </nav>
 
       <header className="home-hero">
+        <div className="home-trial-badge">Free 30-day trial · No card required</div>
         <h1>Online booking, built for barbershops &amp; salons</h1>
         <p>
           Give your shop its own branded booking page. Customers book online in
           seconds, and you manage every appointment from one simple dashboard.
         </p>
         <div className="home-hero-actions">
-          <Link href="/signup" className="btn-dark">Get started</Link>
+          <Link href="/signup" className="btn-dark">Get started free</Link>
           <Link href={DEMO_URL} className="btn-outline">See a demo</Link>
         </div>
       </header>
