@@ -223,6 +223,7 @@ export default function GuidePage() {
         <div className="home-footer-links">
           <Link href="/how-it-works">How it works</Link>
           <Link href="/guide">User guide</Link>
+          <Link href="/about">About &amp; support</Link>
           <Link href="/signup">Get started</Link>
         </div>
         © {new Date().getFullYear()} TrimBooking
