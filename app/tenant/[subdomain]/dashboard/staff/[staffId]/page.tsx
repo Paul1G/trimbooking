@@ -166,15 +166,25 @@ export default function StaffCalendarPage() {
     }
 
     setSavingId(bookingId)
-    const { error } = await supabase
+    // .select() so we can tell a genuine success apart from an update that
+    // silently matched zero rows (e.g. blocked by a row-level security
+    // policy) — Supabase doesn't treat that as an error, so without this the
+    // page would carry on as if the amount had saved, reload, and show the
+    // totals as if the amendment had never happened.
+    const { data, error } = await supabase
       .from('bookings')
       .update({ amount_paid: value })
       .eq('id', bookingId)
       .eq('staff_id', staffId)
+      .select('id')
 
     setSavingId(null)
     if (error) {
       alert(error.message)
+      return
+    }
+    if (!data || data.length === 0) {
+      alert('This payment could not be saved. Please refresh the page and try again.')
       return
     }
 
