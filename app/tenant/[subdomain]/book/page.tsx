@@ -23,7 +23,7 @@ export default async function BookPage({
     .eq('subdomain', subdomain)
     .single()
 
-  if (!tenant) notFound()
+  if (!tenant || tenant.disabled) notFound()
 
   const { data: service } = await supabase
     .from('services')

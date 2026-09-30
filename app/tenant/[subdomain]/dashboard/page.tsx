@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [checking, setChecking] = useState(true)
   const [serviceCount, setServiceCount] = useState<number | null>(null)
   const [staffCount, setStaffCount] = useState<number | null>(null)
+  const [disabled, setDisabled] = useState(false)
 
   useEffect(() => {
     async function checkAccess() {
@@ -35,6 +36,13 @@ export default function DashboardPage() {
         return
       }
 
+      if (tenantData.disabled) {
+        await supabase.auth.signOut()
+        setDisabled(true)
+        setChecking(false)
+        return
+      }
+
       setTenant(tenantData)
       setChecking(false)
 
@@ -51,6 +59,16 @@ export default function DashboardPage() {
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  if (disabled) {
+    return (
+      <div className="tenant-app">
+        <div className="tenant-container">
+          <p>This shop has been disabled. Please contact TrimBooking support.</p>
+        </div>
+      </div>
+    )
   }
 
   if (checking) {

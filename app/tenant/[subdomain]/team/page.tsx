@@ -20,7 +20,7 @@ export default async function TeamPage({
     .eq('subdomain', subdomain)
     .single()
 
-  if (!tenant) notFound()
+  if (!tenant || tenant.disabled) notFound()
 
   const { data: staff } = await supabase
     .from('staff')

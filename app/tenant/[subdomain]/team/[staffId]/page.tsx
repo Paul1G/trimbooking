@@ -20,7 +20,7 @@ export default async function StaffProfilePage({
     .eq('subdomain', subdomain)
     .single()
 
-  if (!tenant) notFound()
+  if (!tenant || tenant.disabled) notFound()
 
   const { data: staffMember } = await supabase
     .from('staff')

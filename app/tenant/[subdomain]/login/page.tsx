@@ -32,13 +32,20 @@ export default function LoginPage() {
     // Confirm this user owns THIS tenant, not just any tenant
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, owner_id')
+      .select('id, owner_id, disabled')
       .eq('subdomain', params.subdomain)
       .single()
 
     if (!tenant || tenant.owner_id !== data.user.id) {
       await supabase.auth.signOut()
       setError('This account does not manage this shop.')
+      setLoading(false)
+      return
+    }
+
+    if (tenant.disabled) {
+      await supabase.auth.signOut()
+      setError('This shop has been disabled. Please contact TrimBooking support.')
       setLoading(false)
       return
     }

@@ -20,7 +20,7 @@ export default async function TenantPage({
     .eq('subdomain', subdomain)
     .single()
 
-  if (!tenant) notFound()
+  if (!tenant || tenant.disabled) notFound()
 
   const { data: services } = await supabase
     .from('services')
