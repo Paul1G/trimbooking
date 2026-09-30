@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { slugifySubdomain, validateSubdomain } from '@/lib/subdomain'
 import '../home.css'
@@ -132,6 +133,12 @@ export default function SignupPage() {
     const loginUrl = `https://${done}.trimbooking.co.uk/login`
     return (
       <div className="home">
+        <nav className="home-nav">
+          <Link href="/" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
+            TrimBooking
+          </Link>
+        </nav>
+
         <div className="signup-wrap">
           <div className="signup-card" style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: '1.6rem', marginTop: 0 }}>Your shop is ready! 🎉</h1>
@@ -150,6 +157,11 @@ export default function SignupPage() {
                 Setting up your shop&apos;s web address — this usually takes under a minute...
               </p>
             )}
+            <p style={{ marginTop: '1.5rem' }}>
+              <Link href="/guide" style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                Read the user guide →
+              </Link>
+            </p>
           </div>
         </div>
       </div>
@@ -172,7 +184,20 @@ export default function SignupPage() {
   return (
     <div className="home">
       <nav className="home-nav">
-        <span className="logo">TrimBooking</span>
+        <Link href="/" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
+          TrimBooking
+        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <Link href="/how-it-works" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+            How it works
+          </Link>
+          <Link href="/guide" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+            User guide
+          </Link>
+          <Link href="/about" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+            About
+          </Link>
+        </div>
       </nav>
 
       <div className="signup-wrap">
@@ -238,6 +263,16 @@ export default function SignupPage() {
           </button>
         </div>
       </div>
+
+      <footer className="home-footer">
+        <div className="home-footer-links">
+          <Link href="/">Home</Link>
+          <Link href="/how-it-works">How it works</Link>
+          <Link href="/guide">User guide</Link>
+          <Link href="/about">About &amp; support</Link>
+        </div>
+        © {new Date().getFullYear()} TrimBooking
+      </footer>
     </div>
   )
 }

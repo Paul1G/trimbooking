@@ -230,6 +230,7 @@ export default function GuidePage() {
 
       <footer className="home-footer">
         <div className="home-footer-links">
+          <Link href="/">Home</Link>
           <Link href="/how-it-works">How it works</Link>
           <Link href="/guide">User guide</Link>
           <Link href="/about">About &amp; support</Link>
