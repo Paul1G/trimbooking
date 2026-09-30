@@ -140,7 +140,7 @@ export default function SignupPage() {
               className="signup-input"
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
-              placeholder="Lipstick, Lashes &amp; Locks"
+              placeholder="e.g. The Style Bar"
             />
           </div>
 
