@@ -66,6 +66,8 @@ export default function StaffPortalPage() {
   const [scheduleSaving, setScheduleSaving] = useState(false)
   const [scheduleStatus, setScheduleStatus] = useState('')
 
+  const [tab, setTab] = useState<'earnings' | 'schedule'>('earnings')
+
   useEffect(() => {
     async function load() {
       const { data: sessionData } = await supabase.auth.getSession()
@@ -266,6 +268,35 @@ export default function StaffPortalPage() {
           </button>
         </div>
 
+        <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0' }}>
+          <button
+            onClick={() => setTab('earnings')}
+            style={{
+              padding: '6px 14px', borderRadius: 8,
+              border: tab === 'earnings' ? '2px solid var(--brand)' : '1px solid #ddd',
+              background: tab === 'earnings' ? 'var(--brand)' : '#fff',
+              color: tab === 'earnings' ? '#fff' : '#000',
+              cursor: 'pointer',
+            }}
+          >
+            Bookings &amp; earnings
+          </button>
+          <button
+            onClick={() => setTab('schedule')}
+            style={{
+              padding: '6px 14px', borderRadius: 8,
+              border: tab === 'schedule' ? '2px solid var(--brand)' : '1px solid #ddd',
+              background: tab === 'schedule' ? 'var(--brand)' : '#fff',
+              color: tab === 'schedule' ? '#fff' : '#000',
+              cursor: 'pointer',
+            }}
+          >
+            My schedule
+          </button>
+        </div>
+
+        {tab === 'earnings' && (
+        <>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1.5rem 0' }}>
           <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
             <div className="card-sub">Today&apos;s expected</div>
@@ -370,7 +401,11 @@ export default function StaffPortalPage() {
           })}
         </div>
 
-        <div className="card" style={{ marginTop: '2rem', cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
+        </>
+        )}
+
+        {tab === 'schedule' && (
+        <div className="card" style={{ marginTop: '1.5rem', cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
           <h3 style={{ marginTop: 0 }}>My working hours</h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.6rem' }}>
             {isAdmin
@@ -399,6 +434,7 @@ export default function StaffPortalPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   )
