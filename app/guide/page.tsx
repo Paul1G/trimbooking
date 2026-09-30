@@ -24,6 +24,9 @@ export default function GuidePage() {
           <Link href="/how-it-works" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
             How it works
           </Link>
+          <Link href="/about" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
+            About
+          </Link>
           <Link href="/signup" className="nav-cta">Get started</Link>
         </div>
       </nav>
