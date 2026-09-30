@@ -9,11 +9,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params
   const body = await req.json().catch(() => ({}))
 
-  if (typeof body.disabled !== 'boolean') {
-    return NextResponse.json({ error: 'Missing disabled boolean.' }, { status: 400 })
+  const update: Record<string, unknown> = {}
+
+  if (typeof body.disabled === 'boolean') {
+    update.disabled = body.disabled
   }
 
-  const { error } = await supabaseAdmin.from('tenants').update({ disabled: body.disabled }).eq('id', id)
+  if (typeof body.paid === 'boolean') {
+    update.paid = body.paid
+    // Marking a shop as paid also lifts any trial-related disable; marking it
+    // unpaid again doesn't re-disable it on its own — that's still an explicit
+    // "disabled" action or the next automatic trial check.
+    if (body.paid) update.disabled = false
+  }
+
+  if (typeof body.extendDays === 'number' && body.extendDays > 0) {
+    const { data: existing } = await supabaseAdmin
+      .from('tenants')
+      .select('trial_ends_at')
+      .eq('id', id)
+      .maybeSingle()
+
+    const base = existing?.trial_ends_at && new Date(existing.trial_ends_at) > new Date()
+      ? new Date(existing.trial_ends_at)
+      : new Date()
+
+    update.trial_ends_at = new Date(base.getTime() + body.extendDays * 24 * 60 * 60 * 1000).toISOString()
+    // Continuing the trial should re-enable a shop the automatic check disabled.
+    update.disabled = false
+  }
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 })
+  }
+
+  const { error } = await supabaseAdmin.from('tenants').update(update).eq('id', id)
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

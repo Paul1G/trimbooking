@@ -6,6 +6,10 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import '../tenant.css'
 
+function daysUntil(dateStr: string): number {
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const params = useParams()
@@ -87,6 +91,24 @@ export default function DashboardPage() {
         <div className="tenant-hero">
           <h1>{tenant.name} — Dashboard</h1>
         </div>
+
+        {!tenant.paid && tenant.trial_ends_at && daysUntil(tenant.trial_ends_at) <= 7 && (
+          <div
+            style={{
+              background: daysUntil(tenant.trial_ends_at) <= 0 ? '#fee2e2' : '#fef9c3',
+              border: `1px solid ${daysUntil(tenant.trial_ends_at) <= 0 ? '#fca5a5' : '#eab308'}`,
+              borderRadius: 12,
+              padding: '1rem 1.25rem',
+              marginBottom: '1.5rem',
+            }}
+          >
+            <p style={{ margin: 0, color: daysUntil(tenant.trial_ends_at) <= 0 ? '#991b1b' : '#854d0e', fontSize: '0.9rem' }}>
+              {daysUntil(tenant.trial_ends_at) > 0
+                ? `Your free trial ends in ${daysUntil(tenant.trial_ends_at)} day${daysUntil(tenant.trial_ends_at) === 1 ? '' : 's'}. Contact us to keep your booking page active.`
+                : 'Your free trial has ended. Contact us to keep your booking page active.'}
+            </p>
+          </div>
+        )}
 
         {(serviceCount === 0 || staffCount === 0) && (
           <div style={{ background: '#fef9c3', border: '1px solid #eab308', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem' }}>

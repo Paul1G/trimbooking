@@ -218,7 +218,13 @@ export default function GuidePage() {
           <h3>Do customers need to create an account?</h3>
           <p>No. Customers book with just their name and contact details, and manage their booking via the personal link in their confirmation email.</p>
           <h3>Is there a cost to try it?</h3>
-          <p>No — you can set up your shop and try TrimBooking out at no cost.</p>
+          <p>
+            Every shop gets a free 30-day trial with no card required. Your
+            dashboard shows a reminder as your trial nears its end — if your
+            shop isn&apos;t marked as paid by then, your booking page is
+            temporarily switched off until you get in touch (see{" "}
+            <Link href="/about">About &amp; support</Link>).
+          </p>
         </section>
       </div>
 

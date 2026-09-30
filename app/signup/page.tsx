@@ -179,7 +179,7 @@ export default function SignupPage() {
         <div className="signup-card">
           <h1 style={{ fontSize: '1.6rem', marginTop: 0, marginBottom: '0.3rem' }}>Set up your shop</h1>
           <p style={{ color: 'var(--muted)', marginTop: 0, marginBottom: '1.75rem' }}>
-            Get your own branded booking page in under a minute.
+            Get your own branded booking page in under a minute. Free for 30 days, no card required.
           </p>
 
           <div className="signup-field">

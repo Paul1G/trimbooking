@@ -12,6 +12,18 @@ type Tenant = {
   owner_id: string | null
   owner_email: string | null
   disabled: boolean
+  paid: boolean
+  trial_ends_at: string | null
+}
+
+function trialLabel(t: Tenant): { text: string; bg: string; color: string } {
+  if (t.paid) return { text: 'Paid', bg: '#dcfce7', color: '#166534' }
+  if (!t.trial_ends_at) return { text: 'No trial set', bg: '#f3f4f6', color: '#374151' }
+
+  const daysLeft = Math.ceil((new Date(t.trial_ends_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+  if (daysLeft < 0) return { text: 'Trial ended', bg: '#fee2e2', color: '#991b1b' }
+  if (daysLeft === 0) return { text: 'Trial ends today', bg: '#fef9c3', color: '#854d0e' }
+  return { text: `Trial: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`, bg: '#fef9c3', color: '#854d0e' }
 }
 
 export default function AdminPage() {
@@ -115,6 +127,40 @@ export default function AdminPage() {
     setBusyId(null)
   }
 
+  async function extendTrial(t: Tenant) {
+    setBusyId(t.id)
+    setActionError('')
+    const res = await authedFetch(`/api/admin/tenants/${t.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ extendDays: 30 }),
+    })
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}))
+      setActionError(result.error || 'Could not extend this trial.')
+      setBusyId(null)
+      return
+    }
+    await loadTenants()
+    setBusyId(null)
+  }
+
+  async function togglePaid(t: Tenant) {
+    setBusyId(t.id)
+    setActionError('')
+    const res = await authedFetch(`/api/admin/tenants/${t.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ paid: !t.paid }),
+    })
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}))
+      setActionError(result.error || 'Could not update payment status.')
+      setBusyId(null)
+      return
+    }
+    await loadTenants()
+    setBusyId(null)
+  }
+
   async function deleteTenant(t: Tenant) {
     const confirmed = window.confirm(
       `Permanently delete "${t.name}" (${t.subdomain}.trimbooking.co.uk)? This deletes all its bookings, staff and services, and cannot be undone.`
@@ -211,17 +257,30 @@ export default function AdminPage() {
                 <div className="admin-shop-sub">{t.owner_email || 'no owner account'}</div>
               </div>
 
-              <span
-                className="admin-badge"
-                style={{
-                  background: t.disabled ? '#fee2e2' : '#dcfce7',
-                  color: t.disabled ? '#991b1b' : '#166534',
-                }}
-              >
-                {t.disabled ? 'Disabled' : 'Active'}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-start' }}>
+                <span
+                  className="admin-badge"
+                  style={{
+                    background: t.disabled ? '#fee2e2' : '#dcfce7',
+                    color: t.disabled ? '#991b1b' : '#166534',
+                  }}
+                >
+                  {t.disabled ? 'Disabled' : 'Active'}
+                </span>
+                <span className="admin-badge" style={trialLabel(t)}>
+                  {trialLabel(t).text}
+                </span>
+              </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {!t.paid && (
+                  <button className="admin-btn" onClick={() => extendTrial(t)} disabled={busyId === t.id}>
+                    Extend trial +30 days
+                  </button>
+                )}
+                <button className="admin-btn" onClick={() => togglePaid(t)} disabled={busyId === t.id}>
+                  {t.paid ? 'Mark as unpaid' : 'Mark as paid'}
+                </button>
                 <button className="admin-btn" onClick={() => toggleDisabled(t)} disabled={busyId === t.id}>
                   {t.disabled ? 'Enable' : 'Disable'}
                 </button>

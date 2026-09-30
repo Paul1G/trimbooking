@@ -74,6 +74,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 })
   }
 
+  const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
   const { error: tenantError } = await supabaseAdmin.from('tenants').insert({
     name: shopName,
     subdomain,
@@ -83,6 +85,7 @@ export async function POST(req: NextRequest) {
     background_color: '#ffffff',
     font_family: 'system',
     opening_hours: DEFAULT_OPENING_HOURS,
+    trial_ends_at: trialEndsAt,
   })
 
   if (tenantError) {

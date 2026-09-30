@@ -190,6 +190,38 @@ export async function sendWelcomeEmail({
   return { id: data?.id }
 }
 
+export async function sendTrialEndedEmail({
+  ownerEmail,
+  shopName,
+  subdomain,
+}: {
+  ownerEmail: string
+  shopName: string
+  subdomain: string
+}) {
+  if (!ownerEmail) return { error: 'Missing owner email' }
+
+  const { data, error } = await resend.emails.send({
+    from: 'TrimBooking <hello@trimbooking.co.uk>',
+    to: ownerEmail,
+    subject: `Your TrimBooking trial has ended — ${shopName}`,
+    html: `
+      <p>Hi there,</p>
+      <p>Your 30-day free trial of TrimBooking for <strong>${shopName}</strong> has come to an end, so
+      <strong>${subdomain}.trimbooking.co.uk</strong> has been temporarily switched off — customers won't
+      be able to book, and staff and owner logins are paused.</p>
+      <p>To pick up where you left off, just reply to this email or get in touch at
+      <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a> and we'll get you sorted.</p>
+    `,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
+
 export async function sendStaffPortalEmail({
   type,
   tenantName,

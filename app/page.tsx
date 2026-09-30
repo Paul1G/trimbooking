@@ -123,7 +123,7 @@ export default function Home() {
 
       <section className="home-cta">
         <h2>Ready to stop taking bookings by phone?</h2>
-        <p>Get your shop set up with its own booking page — no cost to try it out.</p>
+        <p>Get your shop set up with its own booking page — free for 30 days, no card required.</p>
         <Link href="/signup" className="btn-dark">Get started</Link>
       </section>
 
