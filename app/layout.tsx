@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TrimBooking — Online booking for barbershops & salons",
+  title: "TrimBooking — Online booking for hairdressers, beauty salons & barbers",
   description:
-    "Give your barbershop or salon its own branded booking page. Customers book online, you manage every appointment from one simple dashboard.",
+    "Give your hairdressing salon, beauty salon or barbers its own branded booking page. Customers book online, you manage every appointment from one simple dashboard.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

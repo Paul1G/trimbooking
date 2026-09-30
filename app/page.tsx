@@ -79,7 +79,7 @@ export default function Home() {
 
       <header className="home-hero">
         <div className="home-trial-badge">Free 30-day trial · No card required</div>
-        <h1>Online booking, built for barbershops &amp; salons</h1>
+        <h1>Online booking, built for hairdressers, beauty salons &amp; barbers</h1>
         <p>
           Give your shop its own branded booking page. Customers book online in
           seconds, and you manage every appointment from one simple dashboard.
@@ -97,7 +97,7 @@ export default function Home() {
 
       <section className="home-section home-section-soft">
         <div className="home-eyebrow">Everything included</div>
-        <h2 className="home-section-title">Built for how your shop actually runs</h2>
+        <h2 className="home-section-title">Built for how your salon or barbers run</h2>
         <div className="feature-grid">
           {features.map((f) => (
             <div key={f.title} className="feature-card">
