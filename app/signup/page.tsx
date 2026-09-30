@@ -137,6 +137,20 @@ export default function SignupPage() {
           <Link href="/" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
             TrimBooking
           </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <Link href="/" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+              Home
+            </Link>
+            <Link href="/how-it-works" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+              How it works
+            </Link>
+            <Link href="/guide" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+              User guide
+            </Link>
+            <Link href="/about" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+              About
+            </Link>
+          </div>
         </nav>
 
         <div className="signup-wrap">
@@ -188,6 +202,9 @@ export default function SignupPage() {
           TrimBooking
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <Link href="/" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+            Home
+          </Link>
           <Link href="/how-it-works" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
             How it works
           </Link>

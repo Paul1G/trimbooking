@@ -63,6 +63,9 @@ export default function Home() {
       <nav className="home-nav">
         <span className="logo">TrimBooking</span>
         <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <Link href="/" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
+            Home
+          </Link>
           <Link href="/how-it-works" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
             How it works
           </Link>
