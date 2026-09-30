@@ -1,0 +1,154 @@
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export type BookingEmailType =
+  | 'requested'
+  | 'confirmed'
+  | 'declined'
+  | 'cancelled'
+  | 'reminder_week'
+  | 'reminder_day'
+  | 'thank_you'
+
+export type BookingEmailParams = {
+  type: BookingEmailType
+  tenantName: string
+  customerEmail: string
+  customerName: string
+  serviceName?: string
+  staffName?: string
+  startTime: string
+}
+
+// From address: uses the shop's subdomain so it's clearly tied to that shop,
+// but sent from your verified root domain.
+function fromAddress(tenantName: string) {
+  return `${tenantName} <bookings@trimbooking.co.uk>`
+}
+
+export function buildBookingEmail({
+  type,
+  tenantName,
+  customerName,
+  serviceName,
+  staffName,
+  startTime,
+}: BookingEmailParams): { subject: string; html: string } | null {
+  const dateStr = new Date(startTime).toLocaleString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  if (type === 'requested') {
+    return {
+      subject: `Booking request received — ${tenantName}`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>Thanks for your booking request with <strong>${tenantName}</strong>.</p>
+        <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
+        <p>We'll email you as soon as the shop confirms your appointment.</p>
+      `,
+    }
+  }
+
+  if (type === 'confirmed') {
+    return {
+      subject: `Your appointment is confirmed — ${tenantName}`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>Good news — your appointment with <strong>${tenantName}</strong> is confirmed.</p>
+        <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
+        <p>See you then!</p>
+      `,
+    }
+  }
+
+  if (type === 'declined') {
+    return {
+      subject: `Update on your booking request — ${tenantName}`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>Unfortunately <strong>${tenantName}</strong> isn't able to confirm this appointment:</p>
+        <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
+        <p>Please get in touch with the shop directly, or make a new booking for a different time.</p>
+      `,
+    }
+  }
+
+  if (type === 'cancelled') {
+    return {
+      subject: `Your appointment has been cancelled — ${tenantName}`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>Your appointment with <strong>${tenantName}</strong> has been cancelled:</p>
+        <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
+        <p>Please get in touch with the shop if you have any questions.</p>
+      `,
+    }
+  }
+
+  if (type === 'reminder_week') {
+    return {
+      subject: `Reminder: your appointment is next week — ${tenantName}`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>Just a heads up that your appointment with <strong>${tenantName}</strong> is coming up next week.</p>
+        <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
+        <p>Need to change anything? Get in touch with the shop directly.</p>
+      `,
+    }
+  }
+
+  if (type === 'reminder_day') {
+    return {
+      subject: `Reminder: your appointment is tomorrow — ${tenantName}`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>This is a reminder that your appointment with <strong>${tenantName}</strong> is tomorrow.</p>
+        <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
+        <p>See you then!</p>
+      `,
+    }
+  }
+
+  if (type === 'thank_you') {
+    return {
+      subject: `Thanks for visiting ${tenantName}!`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>Thank you for your visit to <strong>${tenantName}</strong> — we hope you're happy with your ${serviceName || 'appointment'}.</p>
+        <p>We'd love to see you again soon.</p>
+      `,
+    }
+  }
+
+  return null
+}
+
+export async function sendBookingEmail(params: BookingEmailParams) {
+  if (!params.customerEmail) {
+    return { error: 'Missing customer email' }
+  }
+
+  const email = buildBookingEmail(params)
+  if (!email) {
+    return { error: 'Unknown email type' }
+  }
+
+  const { data, error } = await resend.emails.send({
+    from: fromAddress(params.tenantName),
+    to: params.customerEmail,
+    subject: email.subject,
+    html: email.html,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
