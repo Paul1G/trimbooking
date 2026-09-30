@@ -93,6 +93,11 @@ export default function HowItWorksPage() {
             <p>Send customers to yourshop.trimbooking.co.uk or add it to Instagram, Google or your website.</p>
           </div>
         </div>
+        <p style={{ textAlign: "center", marginTop: "2rem" }}>
+          <Link href="/demo-dashboard" style={{ color: "var(--ink)", fontWeight: 600, textDecoration: "none" }}>
+            See a sample owner dashboard →
+          </Link>
+        </p>
       </section>
 
       <section className="home-section home-section-soft">

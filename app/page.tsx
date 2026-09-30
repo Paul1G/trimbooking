@@ -90,6 +90,11 @@ export default function Home() {
           <Link href="/signup" className="btn-dark">Get started free</Link>
           <Link href={DEMO_URL} className="btn-outline">See a demo</Link>
         </div>
+        <p style={{ marginTop: '1.25rem', fontSize: '0.9rem' }}>
+          <Link href="/demo-dashboard" style={{ color: "var(--muted)" }}>
+            Curious what the owner side looks like? Try the dashboard demo →
+          </Link>
+        </p>
       </header>
 
       <section className="home-section home-section-soft">
