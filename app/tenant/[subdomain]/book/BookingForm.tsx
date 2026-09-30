@@ -30,6 +30,21 @@ function randomToken(): string {
   return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
 }
 
+function formatDateTime(dateStr: string, slot: string): string {
+  const [h, m] = slot.split(':').map(Number)
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setHours(h, m, 0, 0)
+  return d.toLocaleString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+type Step = 'details' | 'review' | 'done'
+
 export default function BookingForm({
   tenantId,
   tenantName,
@@ -45,18 +60,19 @@ export default function BookingForm({
   staffList: Staff[]
   shopOpeningHours: WorkingHours
 }) {
+  const [step, setStep] = useState<Step>('details')
   const [selectedStaffId, setSelectedStaffId] = useState(staffList[0]?.id || '')
   const [selection, setSelection] = useState<{ date: string; slot: string } | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
-  const [confirmed, setConfirmed] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [confirmedManageUrl, setConfirmedManageUrl] = useState('')
   const [error, setError] = useState('')
 
   const selectedStaff = staffList.find((s) => s.id === selectedStaffId)
 
-  async function handleConfirm() {
+  function handleReview() {
     if (!selection || !name || !phone || !email) {
       setError('Please fill in your name, phone number, and email.')
       return
@@ -69,6 +85,13 @@ export default function BookingForm({
       setError('Please enter a valid UK phone number, e.g. 07123 456789 or 0131 281 1942.')
       return
     }
+    setError('')
+    setStep('review')
+  }
+
+  async function handleFinalConfirm() {
+    if (!selection) return
+    setSubmitting(true)
     setError('')
 
     const [h, m] = selection.slot.split(':').map(Number)
@@ -91,6 +114,7 @@ export default function BookingForm({
     })
 
     if (insertError) {
+      setSubmitting(false)
       setError('Something went wrong: ' + insertError.message)
       return
     }
@@ -116,14 +140,15 @@ export default function BookingForm({
       // Booking already succeeded in the database; a failed email shouldn't block the user
     })
 
-    setConfirmed(true)
+    setSubmitting(false)
+    setStep('done')
   }
 
-  if (confirmed) {
+  if (step === 'done') {
     return (
       <div className="confirm-box">
         <h3 style={{ marginTop: 0 }}>Booking request sent!</h3>
-        <p>{service.name} with {selectedStaff?.name} on {selection?.date} at {selection?.slot}.</p>
+        <p>{service.name} with {selectedStaff?.name} on {selection && formatDateTime(selection.date, selection.slot)}.</p>
         <p style={{ color: '#666' }}>The shop will confirm your appointment shortly.</p>
         <p style={{ color: '#166534' }}>A confirmation has been noted for {email}.</p>
         {confirmedManageUrl && (
@@ -131,6 +156,57 @@ export default function BookingForm({
             <a href={confirmedManageUrl}>Manage or reschedule this booking</a>
           </p>
         )}
+      </div>
+    )
+  }
+
+  if (step === 'review' && selection) {
+    return (
+      <div>
+        <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+            <div>
+              <div className="card-title" style={{ fontSize: '1.1rem' }}>{service.name}</div>
+              <div className="card-sub">with {selectedStaff?.name}</div>
+            </div>
+            <span
+              style={{
+                fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
+                background: '#fef9c3', color: '#854d0e', whiteSpace: 'nowrap',
+              }}
+            >
+              Not booked yet
+            </span>
+          </div>
+
+          <p style={{ margin: '0 0 0.4rem' }}>{formatDateTime(selection.date, selection.slot)}</p>
+          <p className="card-sub" style={{ margin: 0 }}>£{service.price} · {service.duration_minutes} min</p>
+
+          <div style={{ borderTop: '1px solid var(--border)', margin: '1rem 0 0.75rem' }} />
+
+          <p style={{ margin: '0 0 0.2rem' }}>{name}</p>
+          <p className="card-sub" style={{ margin: 0 }}>{phone}</p>
+          <p className="card-sub" style={{ margin: 0 }}>{email}</p>
+        </div>
+
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+          Please check these details before confirming — the shop will use them to reach you about your appointment.
+        </p>
+
+        {error && <p className="error-text">{error}</p>}
+
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+          <button className="btn-primary" onClick={handleFinalConfirm} disabled={submitting}>
+            {submitting ? 'Booking...' : 'Confirm booking'}
+          </button>
+          <button
+            onClick={() => setStep('details')}
+            disabled={submitting}
+            style={{ padding: '0.8rem 1.6rem', background: 'transparent', border: '1px solid #ddd', borderRadius: 10, cursor: 'pointer' }}
+          >
+            Back
+          </button>
+        </div>
       </div>
     )
   }
@@ -175,7 +251,7 @@ export default function BookingForm({
             <input type="email" className="field-input" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           {error && <p className="error-text">{error}</p>}
-          <button className="btn-primary" onClick={handleConfirm}>Confirm booking</button>
+          <button className="btn-primary" onClick={handleReview}>Review booking</button>
         </div>
       )}
     </div>
