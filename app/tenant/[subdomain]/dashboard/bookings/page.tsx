@@ -15,9 +15,12 @@ type Booking = {
   end_time: string
   status: string
   manage_token: string | null
+  staff_id: string | null
   staff: { name: string } | null
   services: { name: string } | null
 }
+
+type StaffMember = { id: string; name: string }
 
 const DAY_START_HOUR = 8
 const DAY_END_HOUR = 20
@@ -46,6 +49,8 @@ export default function BookingsPage() {
   const [tenantName, setTenantName] = useState('')
   const [brandColor, setBrandColor] = useState('#000000')
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [staffList, setStaffList] = useState<StaffMember[]>([])
+  const [staffFilter, setStaffFilter] = useState<string>('all')
   const [checking, setChecking] = useState(true)
   const [filter, setFilter] = useState<'pending' | 'upcoming' | 'all'>('pending')
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
@@ -75,6 +80,14 @@ export default function BookingsPage() {
       setTenantId(tenant.id)
       setTenantName(tenant.name)
       setBrandColor(tenant.brand_color)
+
+      const { data: staffRows } = await supabase
+        .from('staff')
+        .select('id, name')
+        .eq('tenant_id', tenant.id)
+        .order('name', { ascending: true })
+      setStaffList((staffRows as StaffMember[]) || [])
+
       await loadBookings(tenant.id)
       setChecking(false)
     }
@@ -84,7 +97,7 @@ export default function BookingsPage() {
   async function loadBookings(tid: string) {
     const { data } = await supabase
       .from('bookings')
-      .select('id, customer_name, customer_phone, customer_email, start_time, end_time, status, manage_token, staff:staff_id(name), services:service_id(name)')
+      .select('id, customer_name, customer_phone, customer_email, start_time, end_time, status, manage_token, staff_id, staff:staff_id(name), services:service_id(name)')
       .eq('tenant_id', tid)
       .order('start_time', { ascending: true })
     setBookings((data as any) || [])
@@ -141,7 +154,8 @@ export default function BookingsPage() {
   }
 
   const now = new Date()
-  const listVisible = bookings.filter((b) => {
+  const staffScoped = bookings.filter((b) => staffFilter === 'all' || b.staff_id === staffFilter)
+  const listVisible = staffScoped.filter((b) => {
     if (filter === 'pending') return b.status === 'pending'
     if (filter === 'upcoming') return new Date(b.start_time) >= now && b.status !== 'declined' && b.status !== 'cancelled'
     return true
@@ -156,7 +170,7 @@ export default function BookingsPage() {
   const hours = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }, (_, i) => DAY_START_HOUR + i)
 
   function bookingsForDay(day: Date) {
-    return bookings.filter((b) => {
+    return staffScoped.filter((b) => {
       const bd = new Date(b.start_time)
       return (
         bd.getFullYear() === day.getFullYear() &&
@@ -212,6 +226,36 @@ export default function BookingsPage() {
               List
             </button>
           </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+          <button
+            onClick={() => setStaffFilter('all')}
+            style={{
+              padding: '6px 14px', borderRadius: 8,
+              border: staffFilter === 'all' ? '2px solid var(--brand)' : '1px solid #ddd',
+              background: staffFilter === 'all' ? 'var(--brand)' : '#fff',
+              color: staffFilter === 'all' ? '#fff' : '#000',
+              cursor: 'pointer',
+            }}
+          >
+            All staff
+          </button>
+          {staffList.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setStaffFilter(s.id)}
+              style={{
+                padding: '6px 14px', borderRadius: 8,
+                border: staffFilter === s.id ? '2px solid var(--brand)' : '1px solid #ddd',
+                background: staffFilter === s.id ? 'var(--brand)' : '#fff',
+                color: staffFilter === s.id ? '#fff' : '#000',
+                cursor: 'pointer',
+              }}
+            >
+              {s.name}
+            </button>
+          ))}
         </div>
 
         {view === 'calendar' ? (
