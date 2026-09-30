@@ -52,6 +52,7 @@ export default function StaffPage() {
   const [inviteStatus, setInviteStatus] = useState<Record<string, string>>({})
   const [invitingId, setInvitingId] = useState<string | null>(null)
   const [ownerEmail, setOwnerEmail] = useState('')
+  const [ownerUserId, setOwnerUserId] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -76,6 +77,7 @@ export default function StaffPage() {
       setTenantId(tenant.id)
       setBrandColor(tenant.brand_color)
       setOwnerEmail(user.email || '')
+      setOwnerUserId(user.id)
       await loadStaff(tenant.id)
 
       const { data: services } = await supabase
@@ -152,12 +154,15 @@ export default function StaffPage() {
     }
     if (!tenantId) return
 
-    // Note: saving is deliberately NOT blocked here even when the email
-    // matches the owner's own login — the profile itself is just data. The
-    // actual Supabase constraint (one login per email) only bites when
-    // "Send invite" tries to create a real account for it, so that's where
-    // the explanation is surfaced instead (see the note under the email
-    // field below, and the invite API's own check).
+    // A portal email matching the owner's own login can never go through the
+    // normal invite flow (Supabase only allows one login per email) — but
+    // that's fine, because it means this profile IS the owner's own account.
+    // There's no separate login to create: the owner already has one, so we
+    // link this staff row straight to it (user_id = the owner's own auth id)
+    // without any invite email. That's what lets the owner then open their
+    // own staff portal (/staff) and see/enter their own earnings there —
+    // which is the one place earnings are shown, by design.
+    const isSelf = !!(email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase())
     let staffId = editingId
 
     if (editingId === 'new') {
@@ -174,6 +179,7 @@ export default function StaffPage() {
           email: email || null,
           access_level: accessLevel,
           auto_confirm_bookings: autoConfirmBookings,
+          user_id: isSelf ? ownerUserId : null,
         })
         .select('id')
         .single()
@@ -184,19 +190,26 @@ export default function StaffPage() {
       }
       staffId = inserted.id
     } else {
+      // user_id is only ever set here for the isSelf case (linking straight
+      // to the owner's own account) — otherwise it's left out of the update
+      // entirely so a real invited staff login isn't silently unlinked every
+      // time the profile is saved for an unrelated change.
+      const updatePayload: Record<string, unknown> = {
+        name,
+        role,
+        bio: bio || null,
+        photo_url: photoUrl || null,
+        working_hours: workingHours,
+        breaks: breaks,
+        email: email || null,
+        access_level: accessLevel,
+        auto_confirm_bookings: autoConfirmBookings,
+      }
+      if (isSelf) updatePayload.user_id = ownerUserId
+
       const { error: updateError } = await supabase
         .from('staff')
-        .update({
-          name,
-          role,
-          bio: bio || null,
-          photo_url: photoUrl || null,
-          working_hours: workingHours,
-          breaks: breaks,
-          email: email || null,
-          access_level: accessLevel,
-          auto_confirm_bookings: autoConfirmBookings,
-        })
+        .update(updatePayload)
         .eq('id', editingId)
         .eq('tenant_id', tenantId)
 
@@ -327,12 +340,11 @@ export default function StaffPage() {
                 placeholder="name@example.com"
               />
               {email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase() && (
-                <p style={{ fontSize: '0.82rem', color: '#854d0e', background: '#fef9c3', border: '1px solid #eab308', borderRadius: 8, padding: '0.6rem 0.75rem', margin: '0.6rem 0 0' }}>
-                  This is the same email as your own owner login. You can save it, but it can&apos;t become its own
-                  separate staff login — Supabase only allows one login per email, so &quot;Send invite&quot; won&apos;t
-                  work for it. You don&apos;t need one anyway: you already see this profile&apos;s calendar from its
-                  &quot;Calendar&quot; button below. Only use a different email here if this is genuinely a separate
-                  person who needs their own login.
+                <p style={{ fontSize: '0.82rem', color: '#166534', background: '#dcfce7', border: '1px solid #86efac', borderRadius: 8, padding: '0.6rem 0.75rem', margin: '0.6rem 0 0' }}>
+                  This is your own login email, so this profile is you — no invite needed. Saving links it straight
+                  to your existing account, and you&apos;ll be able to see and enter your own earnings from your{' '}
+                  <strong>staff portal</strong> (open it any time from the button that appears on this card once
+                  saved). Only use a different email here if this is genuinely a separate person.
                 </p>
               )}
             </div>
@@ -361,7 +373,7 @@ export default function StaffPage() {
                   </label>
                 </div>
 
-                {editingId !== 'new' && (
+                {editingId !== 'new' && email.trim().toLowerCase() !== ownerEmail.trim().toLowerCase() && (
                   <div style={{ marginTop: '0.8rem' }}>
                     <button
                       onClick={() => {
@@ -487,6 +499,14 @@ export default function StaffPage() {
                   >
                     Calendar
                   </Link>
+                  {member.user_id && ownerUserId && member.user_id === ownerUserId && (
+                    <Link
+                      href="/staff"
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', textDecoration: 'none', fontSize: '0.9rem' }}
+                    >
+                      My earnings
+                    </Link>
+                  )}
                   <button
                     onClick={() => startEdit(member)}
                     style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
