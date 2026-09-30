@@ -62,7 +62,15 @@ export default function Home() {
     <div className="home">
       <nav className="home-nav">
         <span className="logo">TrimBooking</span>
-        <Link href="/signup" className="nav-cta">Get started</Link>
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <Link href="/how-it-works" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
+            How it works
+          </Link>
+          <Link href="/guide" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
+            User guide
+          </Link>
+          <Link href="/signup" className="nav-cta">Get started</Link>
+        </div>
       </nav>
 
       <header className="home-hero">
@@ -112,6 +120,11 @@ export default function Home() {
       </section>
 
       <footer className="home-footer">
+        <div className="home-footer-links">
+          <Link href="/how-it-works">How it works</Link>
+          <Link href="/guide">User guide</Link>
+          <Link href="/signup">Get started</Link>
+        </div>
         © {new Date().getFullYear()} TrimBooking
       </footer>
     </div>
