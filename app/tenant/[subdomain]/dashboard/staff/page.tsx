@@ -20,6 +20,7 @@ type Staff = {
   access_level: string | null
   user_id: string | null
   invited_at: string | null
+  auto_confirm_bookings: boolean | null
 }
 
 type Service = {
@@ -46,9 +47,11 @@ export default function StaffPage() {
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
   const [email, setEmail] = useState('')
   const [accessLevel, setAccessLevel] = useState<'user' | 'admin'>('user')
+  const [autoConfirmBookings, setAutoConfirmBookings] = useState(false)
   const [error, setError] = useState('')
   const [inviteStatus, setInviteStatus] = useState<Record<string, string>>({})
   const [invitingId, setInvitingId] = useState<string | null>(null)
+  const [ownerEmail, setOwnerEmail] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -72,6 +75,7 @@ export default function StaffPage() {
 
       setTenantId(tenant.id)
       setBrandColor(tenant.brand_color)
+      setOwnerEmail(user.email || '')
       await loadStaff(tenant.id)
 
       const { data: services } = await supabase
@@ -106,6 +110,7 @@ export default function StaffPage() {
     setSelectedServiceIds([])
     setEmail('')
     setAccessLevel('user')
+    setAutoConfirmBookings(false)
     setError('')
   }
 
@@ -119,6 +124,7 @@ export default function StaffPage() {
     setBreaks(member.breaks || {})
     setEmail(member.email || '')
     setAccessLevel(member.access_level === 'admin' ? 'admin' : 'user')
+    setAutoConfirmBookings(!!member.auto_confirm_bookings)
     setError('')
 
     const { data: links } = await supabase
@@ -146,6 +152,22 @@ export default function StaffPage() {
     }
     if (!tenantId) return
 
+    // Supabase logins are one-per-email, so a staff portal email that matches
+    // the owner's own login can never get its own separate account — inviting
+    // it silently reuses the owner's login instead, and that account can
+    // never reach the staff portal (logging in as the owner always goes to
+    // the dashboard). The owner already has full access to this profile's
+    // calendar and earnings from the Staff list below, so no portal login is
+    // needed for that case — catching it here avoids a confusing dead end.
+    if (email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase()) {
+      setError(
+        "This is the same email as your own owner login, so it can't have its own separate staff login (Supabase logins are one per email). " +
+        "You don't need one for this — you can already see this profile's calendar and earnings by clicking \"Calendar\" on their card. " +
+        'Leave the portal email blank, or use a different email if this really is a separate person.'
+      )
+      return
+    }
+
     let staffId = editingId
 
     if (editingId === 'new') {
@@ -161,6 +183,7 @@ export default function StaffPage() {
           breaks: breaks,
           email: email || null,
           access_level: accessLevel,
+          auto_confirm_bookings: autoConfirmBookings,
         })
         .select('id')
         .single()
@@ -182,6 +205,7 @@ export default function StaffPage() {
           breaks: breaks,
           email: email || null,
           access_level: accessLevel,
+          auto_confirm_bookings: autoConfirmBookings,
         })
         .eq('id', editingId)
         .eq('tenant_id', tenantId)
@@ -368,6 +392,21 @@ export default function StaffPage() {
             )}
 
             <div className="field-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={autoConfirmBookings}
+                  onChange={(e) => setAutoConfirmBookings(e.target.checked)}
+                />
+                Automatically confirm this person&apos;s bookings
+              </label>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                New bookings for them skip the &quot;pending&quot; step and go straight to confirmed —
+                useful if you trust their availability enough not to review each request.
+              </p>
+            </div>
+
+            <div className="field-group">
               <label className="field-label">Services offered</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
                 {allServices.map((service) => (
@@ -437,7 +476,10 @@ export default function StaffPage() {
                 )}
                 <div style={{ flex: 1 }}>
                   <div className="card-title">{member.name}</div>
-                  <div className="card-sub">{member.role}</div>
+                  <div className="card-sub">
+                    {member.role}
+                    {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <Link

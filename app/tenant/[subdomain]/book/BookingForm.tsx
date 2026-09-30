@@ -10,6 +10,7 @@ type Staff = {
   role: string
   working_hours: WorkingHours
   breaks?: BreakWindows | null
+  auto_confirm_bookings?: boolean | null
 }
 type Service = { id: string; name: string; duration_minutes: number; price: number }
 
@@ -111,6 +112,11 @@ export default function BookingForm({
     const endTime = new Date(startTime.getTime() + service.duration_minutes * 60000)
     const manageToken = randomToken()
 
+    // A staff member with "auto-confirm" turned on skips the pending/review
+    // step entirely — the booking is created already confirmed.
+    const autoConfirm = !!selectedStaff?.auto_confirm_bookings
+    const initialStatus = autoConfirm ? 'confirmed' : 'pending'
+
     const { error: insertError } = await supabase.from('bookings').insert({
       tenant_id: tenantId,
       staff_id: selectedStaffId,
@@ -118,7 +124,7 @@ export default function BookingForm({
       customer_name: name,
       customer_phone: phone,
       customer_email: email,
-      status: 'pending',
+      status: initialStatus,
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
       manage_token: manageToken,
@@ -138,7 +144,7 @@ export default function BookingForm({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'requested',
+        type: autoConfirm ? 'confirmed' : 'requested',
         tenantName,
         customerEmail: email,
         customerName: name,
@@ -156,11 +162,14 @@ export default function BookingForm({
   }
 
   if (step === 'done') {
+    const autoConfirmed = !!selectedStaff?.auto_confirm_bookings
     return (
       <div className="confirm-box">
-        <h3 style={{ marginTop: 0 }}>Booking request sent!</h3>
+        <h3 style={{ marginTop: 0 }}>{autoConfirmed ? 'Booking confirmed!' : 'Booking request sent!'}</h3>
         <p>{service.name} with {selectedStaff?.name} on {selection && formatDateTime(selection.date, selection.slot)}.</p>
-        <p style={{ color: '#666' }}>The shop will confirm your appointment shortly.</p>
+        <p style={{ color: '#666' }}>
+          {autoConfirmed ? "You're all set — see you then!" : 'The shop will confirm your appointment shortly.'}
+        </p>
         <p style={{ color: '#166534' }}>A confirmation has been noted for {email}.</p>
         {confirmedManageUrl && (
           <p style={{ marginBottom: 0 }}>

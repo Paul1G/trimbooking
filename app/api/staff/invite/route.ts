@@ -41,6 +41,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
+  // A portal email that matches the owner's own login can't get its own
+  // separate Supabase account (logins are one per email) — generateLink would
+  // otherwise silently fall back to a recovery link for the OWNER's account,
+  // linking this staff profile to a login that can never actually reach the
+  // staff portal (the owner's login always goes to the dashboard instead).
+  const { data: ownerUser } = await supabaseAdmin.auth.admin.getUserById(tenant.owner_id)
+  if (ownerUser?.user?.email && ownerUser.user.email.toLowerCase() === staff.email.toLowerCase()) {
+    return NextResponse.json(
+      {
+        error:
+          "This staff member's email is the same as the owner login, so it can't have its own separate staff login. " +
+          "The owner can already see this profile's calendar and earnings from the dashboard — use a different email here only if this is really a separate person.",
+      },
+      { status: 400 }
+    )
+  }
+
   const redirectTo = `https://${subdomain}.trimbooking.co.uk/staff/set-password`
 
   let type: 'invite' | 'recovery' = staff.user_id ? 'recovery' : 'invite'
