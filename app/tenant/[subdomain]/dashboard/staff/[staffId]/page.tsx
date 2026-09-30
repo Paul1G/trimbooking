@@ -30,6 +30,15 @@ function money(n: number): string {
   return `£${n.toFixed(2)}`
 }
 
+function startOfWeek(d: Date): Date {
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day // Monday as first day
+  date.setDate(date.getDate() + diff)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
 export default function StaffCalendarPage() {
   const router = useRouter()
   const params = useParams()
@@ -40,9 +49,15 @@ export default function StaffCalendarPage() {
   const [staffName, setStaffName] = useState('')
   const [checking, setChecking] = useState(true)
 
+  const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
+
   const [selectedDate, setSelectedDate] = useState(() => toDateStr(new Date()))
   const [dayBookings, setDayBookings] = useState<Booking[]>([])
   const [loadingDay, setLoadingDay] = useState(false)
+
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
+  const [weekBookings, setWeekBookings] = useState<Booking[]>([])
+  const [loadingWeek, setLoadingWeek] = useState(false)
 
   const [monthExpected, setMonthExpected] = useState(0)
   const [monthActual, setMonthActual] = useState(0)
@@ -98,6 +113,12 @@ export default function StaffCalendarPage() {
 
   useEffect(() => {
     if (!tenantId) return
+    loadWeek(weekStart)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, weekStart])
+
+  useEffect(() => {
+    if (!tenantId) return
     loadMonth(selectedDate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, selectedDate])
@@ -122,13 +143,42 @@ export default function StaffCalendarPage() {
 
     const bookings = (!error && data) || []
     setDayBookings(bookings)
-
-    const nextAmounts: Record<string, string> = {}
-    for (const b of bookings) {
-      nextAmounts[b.id] = b.amount_paid != null ? String(b.amount_paid) : ''
-    }
-    setAmounts(nextAmounts)
+    mergeAmounts(bookings)
     setLoadingDay(false)
+  }
+
+  async function loadWeek(weekStartDate: Date) {
+    if (!tenantId) return
+    setLoadingWeek(true)
+    const rangeStart = new Date(weekStartDate)
+    const rangeEnd = new Date(weekStartDate)
+    rangeEnd.setDate(rangeEnd.getDate() + 6)
+    rangeEnd.setHours(23, 59, 59, 999)
+
+    const { data, error } = await supabase.rpc('owner_get_staff_bookings', {
+      p_tenant_id: tenantId,
+      p_staff_id: staffId,
+      p_range_start: rangeStart.toISOString(),
+      p_range_end: rangeEnd.toISOString(),
+    })
+
+    const bookings = (!error && data) || []
+    setWeekBookings(bookings)
+    mergeAmounts(bookings)
+    setLoadingWeek(false)
+  }
+
+  // Amounts state is shared between the day and week views (both key by
+  // booking id), so loading either just adds its rows in rather than
+  // clobbering whatever the other view already populated.
+  function mergeAmounts(bookings: Booking[]) {
+    setAmounts((prev) => {
+      const next = { ...prev }
+      for (const b of bookings) {
+        next[b.id] = b.amount_paid != null ? String(b.amount_paid) : ''
+      }
+      return next
+    })
   }
 
   async function loadMonth(dateStr: string) {
@@ -164,6 +214,12 @@ export default function StaffCalendarPage() {
     setSelectedDate(toDateStr(d))
   }
 
+  function changeWeek(offset: number) {
+    const d = new Date(weekStart)
+    d.setDate(d.getDate() + offset * 7)
+    setWeekStart(d)
+  }
+
   async function saveAmount(bookingId: string) {
     if (!tenantId) return
     const raw = amounts[bookingId]
@@ -191,8 +247,7 @@ export default function StaffCalendarPage() {
       return
     }
 
-    await loadDay(selectedDate)
-    await loadMonth(selectedDate)
+    await Promise.all([loadDay(selectedDate), loadWeek(weekStart), loadMonth(selectedDate)])
   }
 
   if (checking) {
@@ -215,6 +270,60 @@ export default function StaffCalendarPage() {
   const dayLabel = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long',
   })
+
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekEnd.getDate() + 6)
+  const weekLabel = `${weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${weekEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart)
+    d.setDate(d.getDate() + i)
+    return d
+  })
+
+  function bookingCard(b: Booking) {
+    const colors = statusColors(b.status)
+    const time = new Date(b.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    return (
+      <div key={b.id} className="card" style={{ cursor: 'default', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 200px' }}>
+          <div className="card-title">{time} · {b.customer_name}</div>
+          <div className="card-sub">
+            {b.service_name} {b.service_price != null && `· expected ${money(b.service_price)}`}
+          </div>
+        </div>
+        <span
+          style={{
+            fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
+            textTransform: 'capitalize', background: colors.bg, color: colors.color,
+          }}
+        >
+          {b.status}
+        </span>
+        {b.status === 'confirmed' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>£</span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={amounts[b.id] ?? ''}
+              onChange={(e) => setAmounts({ ...amounts, [b.id]: e.target.value })}
+              placeholder={b.service_price != null ? String(b.service_price) : '0.00'}
+              style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+            />
+            <button
+              onClick={() => saveAmount(b.id)}
+              disabled={savingId === b.id}
+              style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              {savingId === b.id ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="tenant-app" style={{ ['--brand' as any]: brandColor }}>
@@ -246,76 +355,119 @@ export default function StaffCalendarPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
           <button
-            onClick={() => changeDay(-1)}
-            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+            onClick={() => setViewMode('week')}
+            style={{
+              padding: '6px 14px', borderRadius: 8,
+              border: viewMode === 'week' ? '2px solid var(--brand)' : '1px solid #ddd',
+              background: viewMode === 'week' ? 'var(--brand)' : '#fff',
+              color: viewMode === 'week' ? '#fff' : '#000',
+              cursor: 'pointer',
+            }}
           >
-            ← Prev day
+            Week
           </button>
-          <div style={{ fontWeight: 600 }}>{dayLabel}</div>
           <button
-            onClick={() => changeDay(1)}
-            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+            onClick={() => setViewMode('day')}
+            style={{
+              padding: '6px 14px', borderRadius: 8,
+              border: viewMode === 'day' ? '2px solid var(--brand)' : '1px solid #ddd',
+              background: viewMode === 'day' ? 'var(--brand)' : '#fff',
+              color: viewMode === 'day' ? '#fff' : '#000',
+              cursor: 'pointer',
+            }}
           >
-            Next day →
-          </button>
-          <button
-            onClick={() => setSelectedDate(toDateStr(new Date()))}
-            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', marginLeft: 'auto' }}
-          >
-            Today
+            Day
           </button>
         </div>
 
-        {loadingDay && <p>Loading...</p>}
-        {!loadingDay && dayBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this day.</p>}
+        {viewMode === 'day' ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <button
+                onClick={() => changeDay(-1)}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+              >
+                ← Prev day
+              </button>
+              <div style={{ fontWeight: 600 }}>{dayLabel}</div>
+              <button
+                onClick={() => changeDay(1)}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+              >
+                Next day →
+              </button>
+              <button
+                onClick={() => setSelectedDate(toDateStr(new Date()))}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', marginLeft: 'auto' }}
+              >
+                Today
+              </button>
+            </div>
 
-        <div className="card-list">
-          {dayBookings.map((b) => {
-            const colors = statusColors(b.status)
-            const time = new Date(b.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-            return (
-              <div key={b.id} className="card" style={{ cursor: 'default', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 200px' }}>
-                  <div className="card-title">{time} · {b.customer_name}</div>
-                  <div className="card-sub">
-                    {b.service_name} {b.service_price != null && `· expected ${money(b.service_price)}`}
+            {loadingDay && <p>Loading...</p>}
+            {!loadingDay && dayBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this day.</p>}
+
+            <div className="card-list">
+              {dayBookings.map((b) => bookingCard(b))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <button
+                onClick={() => changeWeek(-1)}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+              >
+                ← Prev week
+              </button>
+              <div style={{ fontWeight: 600 }}>{weekLabel}</div>
+              <button
+                onClick={() => changeWeek(1)}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+              >
+                Next week →
+              </button>
+              <button
+                onClick={() => setWeekStart(startOfWeek(new Date()))}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', marginLeft: 'auto' }}
+              >
+                This week
+              </button>
+            </div>
+
+            {loadingWeek && <p>Loading...</p>}
+            {!loadingWeek && weekBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this week.</p>}
+
+            {!loadingWeek && weekDays.map((day) => {
+              const dStr = toDateStr(day)
+              const isToday = toDateStr(new Date()) === dStr
+              const dayBookingsForDay = weekBookings
+                .filter((b) => toDateStr(new Date(b.start_time)) === dStr)
+                .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+
+              if (dayBookingsForDay.length === 0) return null
+
+              return (
+                <div key={dStr} style={{ marginBottom: '1.5rem' }}>
+                  <div
+                    style={{
+                      fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem',
+                      color: isToday ? 'var(--brand)' : 'inherit',
+                    }}
+                  >
+                    {day.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    {isToday ? ' · Today' : ''}
+                  </div>
+                  <div className="card-list">
+                    {dayBookingsForDay.map((b) => bookingCard(b))}
                   </div>
                 </div>
-                <span
-                  style={{
-                    fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
-                    textTransform: 'capitalize', background: colors.bg, color: colors.color,
-                  }}
-                >
-                  {b.status}
-                </span>
-                {b.status === 'confirmed' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>£</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={amounts[b.id] ?? ''}
-                      onChange={(e) => setAmounts({ ...amounts, [b.id]: e.target.value })}
-                      placeholder={b.service_price != null ? String(b.service_price) : '0.00'}
-                      style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
-                    />
-                    <button
-                      onClick={() => saveAmount(b.id)}
-                      disabled={savingId === b.id}
-                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
-                    >
-                      {savingId === b.id ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </>
+        )}
       </div>
     </div>
   )
