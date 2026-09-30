@@ -1,8 +1,6 @@
 import Link from "next/link";
 import "./home.css";
 
-const DEMO_URL = "https://gloss-glow-studio.trimbooking.co.uk";
-
 const features = [
   {
     icon: "🔗",
@@ -88,7 +86,7 @@ export default function Home() {
         </p>
         <div className="home-hero-actions">
           <Link href="/signup" className="btn-dark">Get started free</Link>
-          <Link href={DEMO_URL} className="btn-outline">See a demo</Link>
+          <Link href="/demo-booking" className="btn-outline">See a demo</Link>
         </div>
         <p style={{ marginTop: '1.25rem', fontSize: '0.9rem' }}>
           <Link href="/demo-dashboard" style={{ color: "var(--muted)" }}>
