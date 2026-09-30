@@ -24,6 +24,7 @@ export default function AdminPage() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [actionError, setActionError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [resetSent, setResetSent] = useState(false)
 
   async function authedFetch(path: string, options: RequestInit = {}) {
     const { data } = await supabase.auth.getSession()
@@ -74,6 +75,21 @@ export default function AdminPage() {
     }
     await loadTenants()
     setLoggingIn(false)
+  }
+
+  async function handleReset() {
+    if (!email) {
+      setLoginError('Enter your email above first, then click Forgot password.')
+      return
+    }
+    setLoginError('')
+    const redirectTo = window.location.origin + '/admin/reset-password'
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    if (error) {
+      setLoginError(error.message)
+      return
+    }
+    setResetSent(true)
   }
 
   async function handleLogout() {
@@ -160,6 +176,16 @@ export default function AdminPage() {
             <button className="btn-dark" style={{ width: '100%' }} onClick={handleLogin} disabled={loggingIn}>
               {loggingIn ? 'Logging in...' : 'Log in'}
             </button>
+
+            <p style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
+              {resetSent ? (
+                <span style={{ color: '#166534' }}>Check your email for a reset link.</span>
+              ) : (
+                <a href="#" onClick={(e) => { e.preventDefault(); handleReset() }} style={{ color: 'var(--muted)' }}>
+                  Forgot password?
+                </a>
+              )}
+            </p>
           </div>
         </div>
       </div>
