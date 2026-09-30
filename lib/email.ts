@@ -190,6 +190,50 @@ export async function sendWelcomeEmail({
   return { id: data?.id }
 }
 
+export async function sendStaffPortalEmail({
+  type,
+  tenantName,
+  staffName,
+  staffEmail,
+  actionLink,
+}: {
+  type: 'invite' | 'reset'
+  tenantName: string
+  staffName: string
+  staffEmail: string
+  actionLink: string
+}) {
+  if (!staffEmail) return { error: 'Missing staff email' }
+
+  const subject =
+    type === 'invite'
+      ? `You're invited to your ${tenantName} staff portal`
+      : `Access your ${tenantName} staff portal`
+
+  const html = `
+    <p>Hi ${staffName},</p>
+    ${
+      type === 'invite'
+        ? `<p><strong>${tenantName}</strong> has set you up with access to your own staff portal, where you can see your bookings and earnings.</p>`
+        : `<p>Here's a link to access your <strong>${tenantName}</strong> staff portal.</p>`
+    }
+    <p><a href="${actionLink}">${type === 'invite' ? 'Set up your account' : 'Access your portal'}</a></p>
+  `
+
+  const { data, error } = await resend.emails.send({
+    from: fromAddress(tenantName),
+    to: staffEmail,
+    subject,
+    html,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
+
 export async function sendBookingEmail(params: BookingEmailParams) {
   if (!params.customerEmail) {
     return { error: 'Missing customer email' }

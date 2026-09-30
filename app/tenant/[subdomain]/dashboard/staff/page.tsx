@@ -16,6 +16,10 @@ type Staff = {
   bio: string | null
   working_hours: WorkingHours | null
   breaks: BreakWindows | null
+  email: string | null
+  access_level: string | null
+  user_id: string | null
+  invited_at: string | null
 }
 
 type Service = {
@@ -40,7 +44,11 @@ export default function StaffPage() {
   const [workingHours, setWorkingHours] = useState<WorkingHours>({})
   const [breaks, setBreaks] = useState<BreakWindows>({})
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+  const [email, setEmail] = useState('')
+  const [accessLevel, setAccessLevel] = useState<'user' | 'admin'>('user')
   const [error, setError] = useState('')
+  const [inviteStatus, setInviteStatus] = useState<Record<string, string>>({})
+  const [invitingId, setInvitingId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -96,6 +104,8 @@ export default function StaffPage() {
     setWorkingHours({})
     setBreaks({})
     setSelectedServiceIds([])
+    setEmail('')
+    setAccessLevel('user')
     setError('')
   }
 
@@ -107,6 +117,8 @@ export default function StaffPage() {
     setPhotoUrl(member.photo_url || '')
     setWorkingHours(member.working_hours || {})
     setBreaks(member.breaks || {})
+    setEmail(member.email || '')
+    setAccessLevel(member.access_level === 'admin' ? 'admin' : 'user')
     setError('')
 
     const { data: links } = await supabase
@@ -147,6 +159,8 @@ export default function StaffPage() {
           photo_url: photoUrl || null,
           working_hours: workingHours,
           breaks: breaks,
+          email: email || null,
+          access_level: accessLevel,
         })
         .select('id')
         .single()
@@ -166,6 +180,8 @@ export default function StaffPage() {
           photo_url: photoUrl || null,
           working_hours: workingHours,
           breaks: breaks,
+          email: email || null,
+          access_level: accessLevel,
         })
         .eq('id', editingId)
         .eq('tenant_id', tenantId)
@@ -193,6 +209,32 @@ export default function StaffPage() {
 
     setEditingId(null)
     await loadStaff(tenantId)
+  }
+
+  async function sendInvite(member: Staff) {
+    if (!member.email) return
+    setInvitingId(member.id)
+    setInviteStatus((prev) => ({ ...prev, [member.id]: '' }))
+
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
+
+    const res = await fetch('/api/staff/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+      body: JSON.stringify({ staffId: member.id, subdomain: params.subdomain }),
+    })
+    const result = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      setInviteStatus((prev) => ({ ...prev, [member.id]: result.error || 'Could not send invite.' }))
+      setInvitingId(null)
+      return
+    }
+
+    setInviteStatus((prev) => ({ ...prev, [member.id]: 'Invite sent!' }))
+    setInvitingId(null)
+    if (tenantId) await loadStaff(tenantId)
   }
 
   async function deleteStaff(id: string) {
@@ -290,6 +332,74 @@ export default function StaffPage() {
               <label className="field-label">Photo URL (optional)</label>
               <input className="field-input" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="Paste the public URL from Supabase Storage" />
             </div>
+
+            <div className="field-group">
+              <label className="field-label">Portal email (optional)</label>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.6rem' }}>
+                If set, this person can be sent an invite to log in and see their own
+                bookings and earnings.
+              </p>
+              <input
+                className="field-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+              />
+            </div>
+
+            {email && (
+              <div className="field-group">
+                <label className="field-label">Portal access level</label>
+                <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.4rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                    <input
+                      type="radio"
+                      name="accessLevel"
+                      checked={accessLevel === 'user'}
+                      onChange={() => setAccessLevel('user')}
+                    />
+                    User (view only)
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                    <input
+                      type="radio"
+                      name="accessLevel"
+                      checked={accessLevel === 'admin'}
+                      onChange={() => setAccessLevel('admin')}
+                    />
+                    Admin (can edit own payments &amp; schedule)
+                  </label>
+                </div>
+
+                {editingId !== 'new' && (
+                  <div style={{ marginTop: '0.8rem' }}>
+                    <button
+                      onClick={() => {
+                        const member = staffList.find((s) => s.id === editingId)
+                        if (member) sendInvite({ ...member, email })
+                      }}
+                      disabled={invitingId === editingId}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: '0.9rem' }}
+                    >
+                      {invitingId === editingId
+                        ? 'Sending...'
+                        : staffList.find((s) => s.id === editingId)?.user_id
+                        ? 'Resend invite'
+                        : 'Send invite'}
+                    </button>
+                    {inviteStatus[editingId] && (
+                      <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#166534' }}>
+                        {inviteStatus[editingId]}
+                      </span>
+                    )}
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0.5rem 0 0' }}>
+                      Save any changes to the email above before sending the invite.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="field-group">
               <label className="field-label">Services offered</label>

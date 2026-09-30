@@ -37,9 +37,29 @@ export default function LoginPage() {
       .single()
 
     if (!tenant || tenant.owner_id !== data.user.id) {
-      await supabase.auth.signOut()
-      setError('This account does not manage this shop.')
-      setLoading(false)
+      // Not the owner — check whether this account is a staff member here instead.
+      const { data: staffRow } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('tenant_id', tenant?.id || '')
+        .eq('user_id', data.user.id)
+        .maybeSingle()
+
+      if (!staffRow) {
+        await supabase.auth.signOut()
+        setError('This account does not manage this shop.')
+        setLoading(false)
+        return
+      }
+
+      if (tenant?.disabled) {
+        await supabase.auth.signOut()
+        setError('This shop has been disabled. Please contact TrimBooking support.')
+        setLoading(false)
+        return
+      }
+
+      router.push('/staff')
       return
     }
 
