@@ -109,9 +109,9 @@ export default function PricingPage() {
         <section className="doc-section">
           <h2>How billing works</h2>
           <p>
-            Every new shop starts with a <strong>free 30-day trial</strong> —
-            no card required, and full access to every feature so you can set
-            your shop up properly before paying anything.
+            Every new business starts with a <strong>free 30-day trial</strong> —
+            no card required, and full access to every feature so you can get
+            set up properly before paying anything.
           </p>
           <p>
             Once you&apos;re on a paid plan, here&apos;s how invoicing works:
@@ -137,7 +137,7 @@ export default function PricingPage() {
           </ul>
           <div className="doc-note">
             <strong>Example: </strong>
-            A shop with 6 staff members pays £20 base fee + 2 × £2.50 for the
+            A business with 6 staff members pays £20 base fee + 2 × £2.50 for the
             2 staff beyond the included 4 = <strong>£25/month</strong>.
           </div>
           <p>
@@ -152,7 +152,7 @@ export default function PricingPage() {
 
       <section className="home-cta">
         <h2>Ready to stop taking bookings by phone?</h2>
-        <p>Get your shop set up with its own booking page — free for 30 days, no card required.</p>
+        <p>Get your business set up with its own booking page — free for 30 days, no card required.</p>
         <Link href="/signup" className="btn-dark">Get started</Link>
       </section>
 

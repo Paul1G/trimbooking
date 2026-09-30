@@ -3,7 +3,7 @@ import "../home.css";
 
 const sections = [
   { id: "signing-up", title: "1. Signing up" },
-  { id: "shop-setup", title: "2. Setting up your shop" },
+  { id: "business-setup", title: "2. Setting up your business" },
   { id: "services", title: "3. Adding services" },
   { id: "staff", title: "4. Adding staff" },
   { id: "staff-portal", title: "5. Staff logins & the staff portal" },
@@ -44,7 +44,7 @@ export default function GuidePage() {
         <div className="doc-hero">
           <h1>User guide</h1>
           <p>
-            A complete, step-by-step guide to setting up your shop, taking bookings
+            A complete, step-by-step guide to setting up your business, taking bookings
             and giving your team their own logins.
           </p>
         </div>
@@ -63,14 +63,14 @@ export default function GuidePage() {
         <section id="signing-up" className="doc-section">
           <h2>1. Signing up</h2>
           <p>
-            Go to the <Link href="/signup">sign-up page</Link> and enter your shop
+            Go to the <Link href="/signup">sign-up page</Link> and enter your business
             name and an email and password for your owner account. Choose a web
             address for your booking page — this becomes
             <strong> yourchoice.trimbooking.co.uk</strong>. You can use letters,
             numbers and hyphens.
           </p>
           <p>
-            After you submit the form, TrimBooking creates your shop and sets up
+            After you submit the form, TrimBooking creates your business and sets up
             your booking page automatically. This can take a minute or two while
             your web address is registered — you&apos;ll see a progress screen, and a
             link to log in will appear as soon as it&apos;s ready.
@@ -81,15 +81,15 @@ export default function GuidePage() {
           </div>
         </section>
 
-        <section id="shop-setup" className="doc-section">
-          <h2>2. Setting up your shop</h2>
+        <section id="business-setup" className="doc-section">
+          <h2>2. Setting up your business</h2>
           <p>
             Log in at <strong>yourshop.trimbooking.co.uk/login</strong> to reach
             your dashboard. From there you can:
           </p>
           <ul>
             <li><strong>Branding</strong> — upload a logo and choose a brand colour. This appears on your booking page, staff profiles and emails.</li>
-            <li><strong>Opening hours</strong> — set the days and hours your shop is open. Customers can never book outside these hours, even if a staff member is individually available.</li>
+            <li><strong>Opening hours</strong> — set the days and hours your business is open. Customers can never book outside these hours, even if a staff member is individually available.</li>
           </ul>
           <p>
             Changes save immediately and appear on your public booking page straight away.
@@ -120,7 +120,7 @@ export default function GuidePage() {
             <li><strong>Name, role and bio</strong> — shown on your public team page.</li>
             <li><strong>Photo</strong> — optional, paste a public image URL.</li>
             <li><strong>Services offered</strong> — tick which services this person can be booked for.</li>
-            <li><strong>Working hours</strong> — the days and hours this person is available. Customers can only book within both this and your shop&apos;s opening hours.</li>
+            <li><strong>Working hours</strong> — the days and hours this person is available. Customers can only book within both this and your business&apos;s opening hours.</li>
             <li><strong>Breaks</strong> — block out lunch or any other time that shouldn&apos;t be bookable, per day.</li>
           </ul>
           <p>
@@ -158,7 +158,7 @@ export default function GuidePage() {
           <p>
             Neither access level can see other staff members&apos; bookings, earnings
             or schedules, and neither can reach the owner dashboard, services,
-            branding or shop settings.
+            branding or business settings.
           </p>
           <p>
             You can resend an invite at any time (for example if the link
@@ -197,7 +197,7 @@ export default function GuidePage() {
             After booking, they receive an email confirming their request, and a
             follow-up once you confirm or decline it. Every booking email includes
             a personal link they can use to view, reschedule or cancel their
-            appointment themselves, without needing to phone the shop.
+            appointment themselves, without needing to phone the business.
           </p>
         </section>
 
@@ -218,7 +218,7 @@ export default function GuidePage() {
 
         <section id="faq" className="doc-section">
           <h2>9. Frequently asked questions</h2>
-          <h3>Can I change my shop&apos;s web address?</h3>
+          <h3>Can I change my business&apos;s web address?</h3>
           <p>Get in touch with TrimBooking support — changing it affects any links you&apos;ve already shared.</p>
           <h3>Can a customer book with any available staff member?</h3>
           <p>Yes — customers can choose a specific staff member, or leave it open for the next available person.</p>
@@ -228,9 +228,9 @@ export default function GuidePage() {
           <p>No. Customers book with just their name and contact details, and manage their booking via the personal link in their confirmation email.</p>
           <h3>Is there a cost to try it?</h3>
           <p>
-            Every shop gets a free 30-day trial with no card required. Your
+            Every business gets a free 30-day trial with no card required. Your
             dashboard shows a reminder as your trial nears its end — if your
-            shop isn&apos;t marked as paid by then, your booking page is
+            account isn&apos;t marked as paid by then, your booking page is
             temporarily switched off until you get in touch (see{" "}
             <Link href="/about">About &amp; support</Link>).
           </p>

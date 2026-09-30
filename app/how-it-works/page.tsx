@@ -6,7 +6,7 @@ const features = [
     icon: "🔗",
     title: "Your own booking page",
     description:
-      "Every shop gets a branded page at yourshop.trimbooking.co.uk where customers pick a service, staff member and time — no phone calls needed.",
+      "You get a branded page at yourshop.trimbooking.co.uk where customers pick a service, staff member and time — no phone calls needed.",
   },
   {
     icon: "🎨",
@@ -77,13 +77,13 @@ export default function HowItWorksPage() {
       </header>
 
       <section className="home-section">
-        <div className="home-eyebrow">For shop owners</div>
+        <div className="home-eyebrow">For salon &amp; barbershop owners</div>
         <h2 className="home-section-title">Set up once, run every day from one place</h2>
         <div className="steps-list">
           <div className="step">
             <div className="step-num">1</div>
             <h3>Sign up</h3>
-            <p>Create your shop in a couple of minutes — a name, a web address and you&apos;re registered.</p>
+            <p>Create your business in a couple of minutes — a name, a web address and you&apos;re registered.</p>
           </div>
           <div className="step">
             <div className="step-num">2</div>

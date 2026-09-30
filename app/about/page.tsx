@@ -48,7 +48,7 @@ export default function AboutPage() {
           </p>
           <p>
             Because it&apos;s independently run, changes and fixes tend to happen
-            quickly, and feedback from shops actually using it directly shapes
+            quickly, and feedback from businesses actually using it directly shapes
             what gets built next.
           </p>
         </section>
@@ -64,9 +64,9 @@ export default function AboutPage() {
             <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a>
           </div>
           <p>
-            Please include your shop&apos;s web address
+            Please include your business&apos;s web address
             (<code>yourshop.trimbooking.co.uk</code>) if your question relates
-            to your account or bookings — it helps track down the right shop
+            to your account or bookings — it helps track down the right account
             quickly. Most support queries get a reply within a day or two.
           </p>
           <p>

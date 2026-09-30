@@ -6,7 +6,7 @@ const features = [
     icon: "🔗",
     title: "Your own booking page",
     description:
-      "Every shop gets a branded page at yourshop.trimbooking.co.uk where customers pick a service, staff member and time — no phone calls needed.",
+      "You get a branded page at yourshop.trimbooking.co.uk where customers pick a service, staff member and time — no phone calls needed.",
   },
   {
     icon: "🎨",
@@ -42,7 +42,7 @@ const features = [
 
 const steps = [
   {
-    title: "Set up your shop",
+    title: "Set up your business",
     description: "Add your services, staff, opening hours and branding.",
   },
   {
@@ -84,7 +84,7 @@ export default function Home() {
         <div className="home-trial-badge">Free 30-day trial · No card required</div>
         <h1>Online booking, built for hairdressers, beauty salons &amp; barbers</h1>
         <p>
-          Give your shop its own branded booking page. Customers book online in
+          Give your business its own branded booking page. Customers book online in
           seconds, and you manage every appointment from one simple dashboard.
         </p>
         <div className="home-hero-actions">
@@ -161,7 +161,7 @@ export default function Home() {
 
       <section className="home-cta">
         <h2>Ready to stop taking bookings by phone?</h2>
-        <p>Get your shop set up with its own booking page — free for 30 days, no card required.</p>
+        <p>Get your business set up with its own booking page — free for 30 days, no card required.</p>
         <Link href="/signup" className="btn-dark">Get started</Link>
       </section>
 
