@@ -152,22 +152,12 @@ export default function StaffPage() {
     }
     if (!tenantId) return
 
-    // Supabase logins are one-per-email, so a staff portal email that matches
-    // the owner's own login can never get its own separate account — inviting
-    // it silently reuses the owner's login instead, and that account can
-    // never reach the staff portal (logging in as the owner always goes to
-    // the dashboard). The owner already has full access to this profile's
-    // calendar and earnings from the Staff list below, so no portal login is
-    // needed for that case — catching it here avoids a confusing dead end.
-    if (email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase()) {
-      setError(
-        "This is the same email as your own owner login, so it can't have its own separate staff login (Supabase logins are one per email). " +
-        "You don't need one for this — you can already see this profile's calendar and earnings by clicking \"Calendar\" on their card. " +
-        'Leave the portal email blank, or use a different email if this really is a separate person.'
-      )
-      return
-    }
-
+    // Note: saving is deliberately NOT blocked here even when the email
+    // matches the owner's own login — the profile itself is just data. The
+    // actual Supabase constraint (one login per email) only bites when
+    // "Send invite" tries to create a real account for it, so that's where
+    // the explanation is surfaced instead (see the note under the email
+    // field below, and the invite API's own check).
     let staffId = editingId
 
     if (editingId === 'new') {
@@ -336,6 +326,15 @@ export default function StaffPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
               />
+              {email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase() && (
+                <p style={{ fontSize: '0.82rem', color: '#854d0e', background: '#fef9c3', border: '1px solid #eab308', borderRadius: 8, padding: '0.6rem 0.75rem', margin: '0.6rem 0 0' }}>
+                  This is the same email as your own owner login. You can save it, but it can&apos;t become its own
+                  separate staff login — Supabase only allows one login per email, so &quot;Send invite&quot; won&apos;t
+                  work for it. You don&apos;t need one anyway: you already see this profile&apos;s calendar from its
+                  &quot;Calendar&quot; button below. Only use a different email here if this is genuinely a separate
+                  person who needs their own login.
+                </p>
+              )}
             </div>
 
             {email && (
