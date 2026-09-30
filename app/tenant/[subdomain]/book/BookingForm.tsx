@@ -1,10 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getSlotsForDay } from '@/lib/availability'
 
-type Staff = { id: string; name: string; role: string; working_hours: any }
+type WorkingHours = Record<string, [string, string]>
+type BreakWindows = Record<string, [string, string][]>
+type Staff = {
+  id: string
+  name: string
+  role: string
+  working_hours: WorkingHours
+  breaks?: BreakWindows | null
+}
 type Service = { id: string; name: string; duration_minutes: number; price: number }
 
 function isValidEmail(email: string): boolean {
@@ -14,6 +22,25 @@ function isValidEmail(email: string): boolean {
 function isValidUKPhone(phone: string): boolean {
   const cleaned = phone.replace(/[\s\-()]/g, '')
   return /^(?:(?:\+44|0)(?:7\d{9}|1\d{9}|2\d{9}|3\d{9}))$/.test(cleaned)
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().split('T')[0]
+}
+
+function startOfWeek(d: Date): Date {
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day // Monday as first day
+  date.setDate(date.getDate() + diff)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+function isPastDay(d: Date): boolean {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return d < today
 }
 
 export default function BookingForm({
@@ -27,15 +54,19 @@ export default function BookingForm({
   tenantName: string
   service: Service
   staffList: Staff[]
-  shopOpeningHours: any
+  shopOpeningHours: WorkingHours
 }) {
   const [selectedStaffId, setSelectedStaffId] = useState(staffList[0]?.id || '')
-  const [selectedDate, setSelectedDate] = useState(() => {
+
+  const tomorrow = useMemo(() => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]
-  })
-  const [slots, setSlots] = useState<string[]>([])
+    return d
+  }, [])
+
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(tomorrow))
+  const [selectedDate, setSelectedDate] = useState(() => toDateStr(tomorrow))
+  const [daySlots, setDaySlots] = useState<Record<string, string[]>>({})
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
@@ -46,21 +77,33 @@ export default function BookingForm({
 
   const selectedStaff = staffList.find((s) => s.id === selectedStaffId)
 
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart)
+      d.setDate(d.getDate() + i)
+      return d
+    })
+  }, [weekStart])
+
+  const currentWeekStart = useMemo(() => startOfWeek(new Date()), [])
+  const canGoPrevWeek = weekStart > currentWeekStart
+
   useEffect(() => {
-    async function loadSlots() {
+    async function loadWeek() {
       if (!selectedStaff) return
       setLoading(true)
-      setSelectedSlot(null)
 
-      const dayStart = new Date(selectedDate + 'T00:00:00')
-      const dayEnd = new Date(selectedDate + 'T23:59:59')
+      const rangeStart = new Date(weekStart)
+      const rangeEnd = new Date(weekStart)
+      rangeEnd.setDate(rangeEnd.getDate() + 6)
+      rangeEnd.setHours(23, 59, 59, 999)
 
       const { data: existingBookings } = await supabase
         .from('available_slots')
         .select('start_time, end_time')
         .eq('staff_id', selectedStaff.id)
-        .gte('start_time', dayStart.toISOString())
-        .lte('start_time', dayEnd.toISOString())
+        .gte('start_time', rangeStart.toISOString())
+        .lte('start_time', rangeEnd.toISOString())
         .neq('status', 'cancelled')
 
       const { data: staffHolidays } = await supabase
@@ -74,20 +117,49 @@ export default function BookingForm({
         .is('staff_id', null)
         .eq('tenant_id', tenantId)
 
-      const daySlots = getSlotsForDay(
-        new Date(selectedDate + 'T12:00:00'),
-        selectedStaff.working_hours,
-        shopOpeningHours || {},
-        service.duration_minutes,
-        existingBookings || [],
-        staffHolidays || [],
-        shopHolidays || []
-      )
-      setSlots(daySlots)
+      const nextDaySlots: Record<string, string[]> = {}
+      for (const day of weekDays) {
+        if (isPastDay(day)) {
+          nextDaySlots[toDateStr(day)] = []
+          continue
+        }
+        nextDaySlots[toDateStr(day)] = getSlotsForDay(
+          day,
+          selectedStaff.working_hours,
+          shopOpeningHours || {},
+          service.duration_minutes,
+          existingBookings || [],
+          staffHolidays || [],
+          shopHolidays || [],
+          selectedStaff.breaks || {}
+        )
+      }
+      setDaySlots(nextDaySlots)
+      setSelectedSlot(null)
       setLoading(false)
     }
-    loadSlots()
-  }, [selectedStaffId, selectedDate, selectedStaff, service.duration_minutes])
+    loadWeek()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStaffId, weekStart, service.duration_minutes])
+
+  function goPrevWeek() {
+    if (!canGoPrevWeek) return
+    const d = new Date(weekStart)
+    d.setDate(d.getDate() - 7)
+    setWeekStart(d)
+  }
+
+  function goNextWeek() {
+    const d = new Date(weekStart)
+    d.setDate(d.getDate() + 7)
+    setWeekStart(d)
+  }
+
+  function selectDay(day: Date) {
+    if (isPastDay(day)) return
+    setSelectedDate(toDateStr(day))
+    setSelectedSlot(null)
+  }
 
   async function handleConfirm() {
     if (!selectedSlot || !name || !phone || !email) {
@@ -157,6 +229,9 @@ export default function BookingForm({
     )
   }
 
+  const selectedDaySlots = daySlots[selectedDate] || []
+  const selectedDayObj = weekDays.find((d) => toDateStr(d) === selectedDate)
+
   return (
     <div>
       <div className="field-group">
@@ -173,21 +248,85 @@ export default function BookingForm({
       </div>
 
       <div className="field-group">
-        <label className="field-label">Date</label>
-        <input
-          type="date"
-          className="field-input"
-          value={selectedDate}
-          min={new Date().toISOString().split('T')[0]}
-          onChange={(e) => setSelectedDate(e.target.value)}
-        />
+        <label className="field-label">Day</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={goPrevWeek}
+            disabled={!canGoPrevWeek}
+            style={{
+              padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: '#fff',
+              cursor: canGoPrevWeek ? 'pointer' : 'default', opacity: canGoPrevWeek ? 1 : 0.35, flexShrink: 0,
+            }}
+            aria-label="Previous week"
+          >
+            ←
+          </button>
+
+          <div style={{ display: 'flex', gap: '0.4rem', flex: 1, overflowX: 'auto' }}>
+            {weekDays.map((day) => {
+              const dStr = toDateStr(day)
+              const past = isPastDay(day)
+              const count = daySlots[dStr]?.length ?? null
+              const isSelected = dStr === selectedDate
+              const isToday = toDateStr(new Date()) === dStr
+              return (
+                <button
+                  key={dStr}
+                  type="button"
+                  onClick={() => selectDay(day)}
+                  disabled={past}
+                  style={{
+                    flex: '1 0 60px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '2px',
+                    padding: '0.5rem 0.3rem',
+                    borderRadius: 10,
+                    border: isSelected ? '2px solid var(--brand)' : '1px solid var(--border)',
+                    background: isSelected ? 'var(--brand)' : '#fff',
+                    color: isSelected ? '#fff' : past ? '#ccc' : 'var(--text)',
+                    cursor: past ? 'default' : 'pointer',
+                    opacity: past ? 0.5 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                    {day.toLocaleDateString('en-GB', { weekday: 'short' })}
+                  </span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 700 }}>{day.getDate()}</span>
+                  <span style={{ fontSize: '0.65rem', opacity: 0.85 }}>
+                    {isToday && !past ? 'Today · ' : ''}
+                    {loading ? '···' : past ? 'Past' : count === 0 ? 'Full' : `${count} free`}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={goNextWeek}
+            style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: '#fff', cursor: 'pointer', flexShrink: 0 }}
+            aria-label="Next week"
+          >
+            →
+          </button>
+        </div>
       </div>
 
-      <h2 className="section-title" style={{ marginTop: '1.5rem' }}>Available times</h2>
+      <h2 className="section-title" style={{ marginTop: '1.5rem' }}>
+        Available times
+        {selectedDayObj && (
+          <span style={{ fontWeight: 400, fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+            {selectedDayObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </span>
+        )}
+      </h2>
       {loading && <p>Loading...</p>}
-      {!loading && slots.length === 0 && <p>No availability that day. Try another date.</p>}
+      {!loading && selectedDaySlots.length === 0 && <p>No availability that day. Try another date.</p>}
       <div className="slot-grid">
-        {slots.map((slot) => (
+        {selectedDaySlots.map((slot) => (
           <button
             key={slot}
             className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}

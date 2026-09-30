@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import WeeklyHoursEditor, { WorkingHours } from '../WeeklyHoursEditor'
+import BreaksEditor, { BreakWindows } from '../BreaksEditor'
 import '../../tenant.css'
 
 type Staff = {
@@ -12,6 +14,8 @@ type Staff = {
   role: string
   photo_url: string | null
   bio: string | null
+  working_hours: WorkingHours | null
+  breaks: BreakWindows | null
 }
 
 type Service = {
@@ -33,6 +37,8 @@ export default function StaffPage() {
   const [role, setRole] = useState('')
   const [bio, setBio] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
+  const [workingHours, setWorkingHours] = useState<WorkingHours>({})
+  const [breaks, setBreaks] = useState<BreakWindows>({})
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
   const [error, setError] = useState('')
 
@@ -87,6 +93,8 @@ export default function StaffPage() {
     setRole('')
     setBio('')
     setPhotoUrl('')
+    setWorkingHours({})
+    setBreaks({})
     setSelectedServiceIds([])
     setError('')
   }
@@ -97,6 +105,8 @@ export default function StaffPage() {
     setRole(member.role || '')
     setBio(member.bio || '')
     setPhotoUrl(member.photo_url || '')
+    setWorkingHours(member.working_hours || {})
+    setBreaks(member.breaks || {})
     setError('')
 
     const { data: links } = await supabase
@@ -135,6 +145,8 @@ export default function StaffPage() {
           role,
           bio: bio || null,
           photo_url: photoUrl || null,
+          working_hours: workingHours,
+          breaks: breaks,
         })
         .select('id')
         .single()
@@ -152,6 +164,8 @@ export default function StaffPage() {
           role,
           bio: bio || null,
           photo_url: photoUrl || null,
+          working_hours: workingHours,
+          breaks: breaks,
         })
         .eq('id', editingId)
         .eq('tenant_id', tenantId)
@@ -285,6 +299,24 @@ export default function StaffPage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div className="field-group">
+              <label className="field-label">Working hours</label>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.6rem' }}>
+                The days and hours this person is available to book. Customers can only book within
+                both this and the shop&apos;s opening hours.
+              </p>
+              <WeeklyHoursEditor value={workingHours} onChange={setWorkingHours} />
+            </div>
+
+            <div className="field-group">
+              <label className="field-label">Breaks</label>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.6rem' }}>
+                Block out lunch, meetings, or any other time within their working hours that
+                shouldn&apos;t be bookable. Add as many as needed per day.
+              </p>
+              <BreaksEditor value={breaks} onChange={setBreaks} />
             </div>
 
             {error && <p className="error-text">{error}</p>}

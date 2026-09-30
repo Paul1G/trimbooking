@@ -1,4 +1,5 @@
 type WorkingHours = Record<string, [string, string]>
+type BreakWindows = Record<string, [string, string][]>
 type HolidayRange = { start_date: string; end_date: string }
 
 function dateStr(d: Date): string {
@@ -10,6 +11,12 @@ export function isClosedByHoliday(date: Date, holidays: HolidayRange[]): boolean
   return holidays.some((h) => d >= h.start_date && d <= h.end_date)
 }
 
+const DAY_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
+export function dayKeyFor(date: Date): string {
+  return DAY_NAMES[date.getDay()]
+}
+
 export function getSlotsForDay(
   date: Date,
   staffWorkingHours: WorkingHours,
@@ -17,14 +24,14 @@ export function getSlotsForDay(
   durationMinutes: number,
   existingBookings: { start_time: string; end_time: string }[],
   staffHolidays: HolidayRange[] = [],
-  shopHolidays: HolidayRange[] = []
+  shopHolidays: HolidayRange[] = [],
+  staffBreaks: BreakWindows = {}
 ): string[] {
   if (isClosedByHoliday(date, staffHolidays) || isClosedByHoliday(date, shopHolidays)) {
     return []
   }
 
-  const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-  const dayKey = dayNames[date.getDay()]
+  const dayKey = dayKeyFor(date)
 
   const staffHours = staffWorkingHours[dayKey]
   const shopHours = shopOpeningHours[dayKey]
@@ -49,6 +56,19 @@ export function getSlotsForDay(
   dayStart.setHours(0, openMins, 0, 0)
   dayEnd.setHours(0, closeMins, 0, 0)
 
+  // Turn today's break windows into absolute start/end times, same as bookings
+  const breaksToday = (staffBreaks[dayKey] || []).map(([start, end]) => {
+    const [bsH, bsM] = start.split(':').map(Number)
+    const [beH, beM] = end.split(':').map(Number)
+    const bStart = new Date(date)
+    bStart.setHours(bsH, bsM, 0, 0)
+    const bEnd = new Date(date)
+    bEnd.setHours(beH, beM, 0, 0)
+    return { start_time: bStart.toISOString(), end_time: bEnd.toISOString() }
+  })
+
+  const blockers = [...existingBookings, ...breaksToday]
+
   const slots: string[] = []
   const slotLength = 15
 
@@ -60,7 +80,7 @@ export function getSlotsForDay(
     const slotStart = new Date(t)
     const slotEnd = new Date(t.getTime() + durationMinutes * 60000)
 
-    const overlaps = existingBookings.some((b) => {
+    const overlaps = blockers.some((b) => {
       const bStart = new Date(b.start_time)
       const bEnd = new Date(b.end_time)
       return slotStart < bEnd && slotEnd > bStart
