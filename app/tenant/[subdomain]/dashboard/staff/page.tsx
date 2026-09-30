@@ -239,16 +239,22 @@ export default function StaffPage() {
 
   async function deleteStaff(id: string) {
     if (!tenantId) return
-    if (!confirm('Delete this staff member? This cannot be undone.')) return
+    if (!confirm('Delete this staff member? This removes their access to this dashboard and cannot be undone.')) return
 
-    const { error: deleteError } = await supabase
-      .from('staff')
-      .delete()
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
 
-    if (deleteError) {
-      alert(deleteError.message)
+    // Goes through the API (rather than deleting the row directly) so that,
+    // if this staff member has their own login, that login is revoked too —
+    // not just their profile hidden from the dashboard.
+    const res = await fetch(`/api/staff/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token || ''}` },
+    })
+
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}))
+      alert(result.error || 'Could not delete this staff member.')
       return
     }
     await loadStaff(tenantId)
