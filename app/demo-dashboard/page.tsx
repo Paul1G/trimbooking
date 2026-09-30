@@ -105,7 +105,7 @@ export default function DemoDashboardPage() {
       <div className="tenant-app" style={{ background: 'transparent', ['--brand' as any]: '#9d174d' }}>
         <div className="tenant-container">
           <div className="tenant-hero" style={{ textAlign: 'left', marginTop: '1.5rem' }}>
-            <h1 style={{ fontSize: '1.9rem' }}>Gloss &amp; Glow Studio — Dashboard</h1>
+            <h1>Gloss &amp; Glow Studio — Dashboard</h1>
             <p>Sample data, for illustration only.</p>
           </div>
 
