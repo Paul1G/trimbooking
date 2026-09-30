@@ -69,10 +69,11 @@ export default function BookingForm({
   const [submitting, setSubmitting] = useState(false)
   const [confirmedManageUrl, setConfirmedManageUrl] = useState('')
   const [error, setError] = useState('')
+  const [lastBooking, setLastBooking] = useState<{ start_time: string; service_name: string | null } | null>(null)
 
   const selectedStaff = staffList.find((s) => s.id === selectedStaffId)
 
-  function handleReview() {
+  async function handleReview() {
     if (!selection || !name || !phone || !email) {
       setError('Please fill in your name, phone number, and email.')
       return
@@ -86,6 +87,16 @@ export default function BookingForm({
       return
     }
     setError('')
+
+    // Best-effort lookup of this customer's last visit, so they can see it
+    // on the review screen alongside the new booking they're about to make.
+    const { data } = await supabase.rpc('get_customer_last_booking', {
+      p_tenant_id: tenantId,
+      p_email: email,
+      p_phone: phone,
+    })
+    setLastBooking((data as { start_time: string; service_name: string | null } | null) || null)
+
     setStep('review')
   }
 
@@ -187,6 +198,13 @@ export default function BookingForm({
           <p style={{ margin: '0 0 0.2rem' }}>{name}</p>
           <p className="card-sub" style={{ margin: 0 }}>{phone}</p>
           <p className="card-sub" style={{ margin: 0 }}>{email}</p>
+
+          {lastBooking && (
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '1rem', marginBottom: 0 }}>
+              Your last visit was {new Date(lastBooking.start_time).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {lastBooking.service_name ? ` for ${lastBooking.service_name}` : ''}.
+            </p>
+          )}
         </div>
 
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
