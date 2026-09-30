@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { slugifySubdomain, validateSubdomain } from '@/lib/subdomain'
 import { sendWelcomeEmail } from '@/lib/email'
+import { addDomainToVercelProject } from '@/lib/vercel'
 
 // Sensible defaults for a brand new shop — open Mon–Sat, closed Sunday.
 // Keys match lib/availability.ts's dayKeyFor() (sun, mon, tue, wed, thu, fri, sat).
@@ -88,6 +89,19 @@ export async function POST(req: NextRequest) {
     // Roll back the auth user so a failed signup doesn't leave an orphaned account.
     await supabaseAdmin.auth.admin.deleteUser(created.user.id)
     return NextResponse.json({ error: 'Could not set up your shop: ' + tenantError.message }, { status: 500 })
+  }
+
+  // Register the new subdomain with Vercel so it's actually reachable — without
+  // this, the tenant row would exist but the subdomain would 404 forever, so a
+  // failure here rolls back everything just like a failed tenant insert does.
+  const domainResult = await addDomainToVercelProject(`${subdomain}.trimbooking.co.uk`)
+  if (!domainResult.ok) {
+    await supabaseAdmin.from('tenants').delete().eq('owner_id', created.user.id)
+    await supabaseAdmin.auth.admin.deleteUser(created.user.id)
+    return NextResponse.json(
+      { error: 'Could not set up your shop\'s web address: ' + (domainResult.error || 'unknown error') },
+      { status: 500 }
+    )
   }
 
   sendWelcomeEmail({ ownerEmail: email, shopName, subdomain }).catch(() => {
