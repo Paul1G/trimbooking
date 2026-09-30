@@ -52,6 +52,7 @@ export default function StaffPortalPage() {
   const [selectedDate, setSelectedDate] = useState(() => toDateStr(new Date()))
   const [dayBookings, setDayBookings] = useState<Booking[]>([])
   const [loadingDay, setLoadingDay] = useState(false)
+  const [dayError, setDayError] = useState('')
 
   const [monthExpected, setMonthExpected] = useState(0)
   const [monthActual, setMonthActual] = useState(0)
@@ -124,7 +125,7 @@ export default function StaffPortalPage() {
     const dayStart = new Date(dateStr + 'T00:00:00')
     const dayEnd = new Date(dateStr + 'T23:59:59')
 
-    const { data } = await supabase.rpc('staff_get_my_bookings', {
+    const { data, error } = await supabase.rpc('staff_get_my_bookings', {
       p_tenant_id: tenantId,
       p_start: dayStart.toISOString(),
       p_end: dayEnd.toISOString(),
@@ -132,6 +133,7 @@ export default function StaffPortalPage() {
 
     const bookings = (data as Booking[]) || []
     setDayBookings(bookings)
+    setDayError(error ? error.message : '')
 
     const nextAmounts: Record<string, string> = {}
     for (const b of bookings) {
@@ -307,7 +309,12 @@ export default function StaffPortalPage() {
         </div>
 
         {loadingDay && <p>Loading...</p>}
-        {!loadingDay && dayBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this day.</p>}
+        {dayError && (
+          <p style={{ color: '#991b1b', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '0.75rem 1rem' }}>
+            Couldn&apos;t load this day: {dayError}
+          </p>
+        )}
+        {!loadingDay && !dayError && dayBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this day.</p>}
 
         <div className="card-list">
           {dayBookings.map((b) => {
