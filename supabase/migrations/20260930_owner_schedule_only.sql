@@ -67,5 +67,22 @@ $$;
 
 grant execute on function owner_get_staff_schedule(uuid, uuid, timestamptz, timestamptz) to authenticated;
 
-revoke execute on function owner_get_staff_bookings(uuid, uuid, timestamptz, timestamptz) from authenticated;
-revoke execute on function owner_update_staff_payment(uuid, uuid, numeric) from authenticated;
+-- Wrapped in DO blocks with exception handling: if owner_get_staff_bookings
+-- or owner_update_staff_payment don't exist (e.g. that earlier migration
+-- wasn't actually applied), a plain `revoke` here would error and roll back
+-- this entire script — including the owner_get_staff_schedule function just
+-- created above. Catching "undefined_function" means this always succeeds
+-- and leaves the schedule-only function in place either way.
+do $$
+begin
+  revoke execute on function owner_get_staff_bookings(uuid, uuid, timestamptz, timestamptz) from authenticated;
+exception
+  when undefined_function then null;
+end $$;
+
+do $$
+begin
+  revoke execute on function owner_update_staff_payment(uuid, uuid, numeric) from authenticated;
+exception
+  when undefined_function then null;
+end $$;
