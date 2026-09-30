@@ -18,13 +18,13 @@ const features = [
     icon: "📅",
     title: "Staff calendars",
     description:
-      "Set each team member's working hours and breaks. TrimBooking only offers times that are actually free.",
+      "Set each team member's working hours and breaks. TrimBooking only offers times that are actually free. View each person's day or a full week at a glance.",
   },
   {
     icon: "✅",
-    title: "Accept or decline requests",
+    title: "Accept or decline requests, or auto-confirm",
     description:
-      "New bookings land as requests in your dashboard. Approve or decline with one click, right from your calendar or list view.",
+      "New bookings land as requests in your dashboard by default — approve or decline with one click. Or switch on auto-confirm for a staff member so their bookings are accepted instantly, no waiting on you.",
   },
   {
     icon: "✉️",
@@ -151,12 +151,12 @@ export default function HowItWorksPage() {
           <div className="feature-card">
             <div className="feature-icon">💷</div>
             <h3>See what they&apos;ve earned</h3>
-            <p>Every staff member can see their own day-by-day and month-to-date bookings and earnings — nobody else&apos;s.</p>
+            <p>Every staff member can see their own day-by-day and month-to-date bookings and earnings — nobody else&apos;s, including you. As the owner, you see who&apos;s booked in and when, but earnings stay private to each staff member.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon">⚙️</div>
             <h3>Optional self-management</h3>
-            <p>Give trusted staff &quot;admin&quot; access so they can record their own payments and update their own working hours.</p>
+            <p>Give trusted staff &quot;admin&quot; access so they can record the actual payment received against their own confirmed bookings.</p>
           </div>
         </div>
       </section>

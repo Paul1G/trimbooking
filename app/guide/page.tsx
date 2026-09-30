@@ -122,11 +122,19 @@ export default function GuidePage() {
             <li><strong>Services offered</strong> — tick which services this person can be booked for.</li>
             <li><strong>Working hours</strong> — the days and hours this person is available. Customers can only book within both this and your business&apos;s opening hours.</li>
             <li><strong>Breaks</strong> — block out lunch or any other time that shouldn&apos;t be bookable, per day.</li>
+            <li><strong>Automatically confirm this person&apos;s bookings</strong> — optional. Switch this on for a staff member and their bookings are accepted instantly when a customer requests them, instead of landing as a pending request for you to approve.</li>
           </ul>
           <p>
             Click <strong>Save</strong>, and the staff member immediately appears on
             your public booking page. You can come back and edit any of these
             details, or delete a staff member, at any time.
+          </p>
+          <p>
+            From each staff member&apos;s card you can also open their{" "}
+            <strong>calendar</strong>, which shows their booking schedule as a
+            single day or a full week at a time — handy for seeing who&apos;s in
+            and when at a glance. Their earnings aren&apos;t shown here; see the
+            next section for why.
           </p>
         </section>
 
@@ -152,14 +160,23 @@ export default function GuidePage() {
           </p>
           <h3>User vs. Admin access</h3>
           <ul>
-            <li><strong>User</strong> — can view their own bookings and earnings (today and month-to-date, expected vs. actual), and their own working hours and breaks. Everything is read-only.</li>
-            <li><strong>Admin</strong> — everything a User can see, plus the ability to record the actual payment received for their own confirmed bookings, and to edit their own working hours and breaks.</li>
+            <li><strong>User</strong> — can view their own bookings and earnings (today and month-to-date, expected vs. actual). Read-only.</li>
+            <li><strong>Admin</strong> — everything a User can see, plus the ability to record the actual payment received for their own confirmed bookings.</li>
           </ul>
           <p>
-            Neither access level can see other staff members&apos; bookings, earnings
-            or schedules, and neither can reach the owner dashboard, services,
-            branding or business settings.
+            Neither access level can see other staff members&apos; bookings or
+            earnings, and neither can reach the owner dashboard, services,
+            branding or business settings. Working hours and breaks are set by
+            the business owner from the Staff page — staff members can view
+            their own bookings and earnings from their portal, but schedule
+            changes go through you.
           </p>
+          <div className="doc-note">
+            The owner dashboard shows each staff member&apos;s booking schedule
+            (who&apos;s booked in and when) but never their earnings — expected
+            or actual payment amounts are only ever visible to that staff
+            member themselves, from their own portal.
+          </div>
           <p>
             You can resend an invite at any time (for example if the link
             expired), and you can remove a staff member&apos;s access entirely by
@@ -182,7 +199,14 @@ export default function GuidePage() {
           <p>
             Each staff member&apos;s bookings are shown against their own calendar, so
             you always know who is booked and when, and customers are only ever
-            offered times that don&apos;t clash with an existing booking.
+            offered times that don&apos;t clash with an existing booking. Switch
+            between a single <strong>day</strong> and a full <strong>week</strong> view
+            on a staff member&apos;s calendar to see their schedule at a glance.
+          </p>
+          <p>
+            If you&apos;d rather a staff member&apos;s bookings didn&apos;t need your approval
+            at all, turn on <strong>auto-confirm</strong> for them on the Staff page —
+            their bookings are then accepted the moment a customer requests them.
           </p>
         </section>
 
@@ -195,7 +219,9 @@ export default function GuidePage() {
           </p>
           <p>
             After booking, they receive an email confirming their request, and a
-            follow-up once you confirm or decline it. Every booking email includes
+            follow-up once you confirm or decline it — or, if the staff member has
+            auto-confirm switched on, their booking is confirmed straight away and
+            they&apos;re told so immediately. Every booking email includes
             a personal link they can use to view, reschedule or cancel their
             appointment themselves, without needing to phone the business.
           </p>

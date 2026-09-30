@@ -13,32 +13,27 @@ type Booking = {
   customer: string
   service: string
   staff: string
-  price: number
   status: BookingStatus
 }
 
 const INITIAL_BOOKINGS: Booking[] = [
-  { id: '1', time: '9:00 AM', customer: 'Sophie Bennett', service: 'Cut & Blow Dry', staff: 'Maya Chen', price: 45, status: 'confirmed' },
-  { id: '2', time: '10:30 AM', customer: 'Jordan Lee', service: 'Full Colour', staff: 'Ade Okafor', price: 85, status: 'pending' },
-  { id: '3', time: '11:15 AM', customer: 'Priya Sharma', service: 'Lash Lift', staff: 'Maya Chen', price: 35, status: 'pending' },
-  { id: '4', time: '1:00 PM', customer: 'Tom Whitfield', service: "Men's Cut", staff: 'Callum Reed', price: 28, status: 'confirmed' },
-  { id: '5', time: '2:30 PM', customer: 'Freya Nilsen', service: 'Balayage', staff: 'Ade Okafor', price: 120, status: 'pending' },
+  { id: '1', time: '9:00 AM', customer: 'Sophie Bennett', service: 'Cut & Blow Dry', staff: 'Maya Chen', status: 'confirmed' },
+  { id: '2', time: '10:30 AM', customer: 'Jordan Lee', service: 'Full Colour', staff: 'Ade Okafor', status: 'pending' },
+  { id: '3', time: '11:15 AM', customer: 'Priya Sharma', service: 'Lash Lift', staff: 'Maya Chen', status: 'pending' },
+  { id: '4', time: '1:00 PM', customer: 'Tom Whitfield', service: "Men's Cut", staff: 'Callum Reed', status: 'confirmed' },
+  { id: '5', time: '2:30 PM', customer: 'Freya Nilsen', service: 'Balayage', staff: 'Ade Okafor', status: 'pending' },
 ]
 
 const STAFF = [
-  { name: 'Maya Chen', role: 'Senior Stylist', today: 80 },
-  { name: 'Ade Okafor', role: 'Colour Specialist', today: 205 },
-  { name: 'Callum Reed', role: 'Barber', today: 28 },
+  { name: 'Maya Chen', role: 'Senior Stylist' },
+  { name: 'Ade Okafor', role: 'Colour Specialist' },
+  { name: 'Callum Reed', role: 'Barber' },
 ]
 
 function statusColors(status: BookingStatus) {
   if (status === 'pending') return { bg: '#fef9c3', color: '#854d0e' }
   if (status === 'confirmed') return { bg: '#dcfce7', color: '#166534' }
   return { bg: '#fee2e2', color: '#991b1b' }
-}
-
-function money(n: number): string {
-  return `£${n.toFixed(2)}`
 }
 
 export default function DemoDashboardPage() {
@@ -49,7 +44,6 @@ export default function DemoDashboardPage() {
   }
 
   const confirmedToday = bookings.filter((b) => b.status === 'confirmed')
-  const todayRevenue = confirmedToday.reduce((sum, b) => sum + b.price, 0)
   const pendingCount = bookings.filter((b) => b.status === 'pending').length
 
   return (
@@ -122,8 +116,8 @@ export default function DemoDashboardPage() {
               <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{pendingCount}</div>
             </div>
             <div className="card" style={{ cursor: 'default', flex: '1 1 150px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
-              <div className="card-sub">Today&apos;s revenue (confirmed)</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{money(todayRevenue)}</div>
+              <div className="card-sub">Confirmed today</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{confirmedToday.length}</div>
             </div>
           </div>
 
@@ -138,7 +132,7 @@ export default function DemoDashboardPage() {
                 <div key={b.id} className="card" style={{ cursor: 'default', flexWrap: 'wrap' }}>
                   <div style={{ flex: '1 1 200px' }}>
                     <div className="card-title">{b.time} · {b.customer}</div>
-                    <div className="card-sub">{b.service} with {b.staff} · {money(b.price)}</div>
+                    <div className="card-sub">{b.service} with {b.staff}</div>
                   </div>
                   <span
                     style={{
@@ -170,17 +164,25 @@ export default function DemoDashboardPage() {
           </div>
 
           <h3 className="section-title">Your team</h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
+            You see each person&apos;s booking schedule — click through for a day or
+            week view. Earnings stay private to each staff member, visible only
+            from their own portal.
+          </p>
           <div className="card-list">
-            {STAFF.map((s) => (
-              <div key={s.name} className="card" style={{ cursor: 'default' }}>
-                <div className="avatar-fallback">{s.name[0]}</div>
-                <div style={{ flex: 1 }}>
-                  <div className="card-title">{s.name}</div>
-                  <div className="card-sub">{s.role}</div>
+            {STAFF.map((s) => {
+              const staffToday = bookings.filter((b) => b.staff === s.name)
+              return (
+                <div key={s.name} className="card" style={{ cursor: 'default' }}>
+                  <div className="avatar-fallback">{s.name[0]}</div>
+                  <div style={{ flex: 1 }}>
+                    <div className="card-title">{s.name}</div>
+                    <div className="card-sub">{s.role}</div>
+                  </div>
+                  <div className="card-price">{staffToday.length} booking{staffToday.length === 1 ? '' : 's'} today</div>
                 </div>
-                <div className="card-price">{money(s.today)} today</div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
