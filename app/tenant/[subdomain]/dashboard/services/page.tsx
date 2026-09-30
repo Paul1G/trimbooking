@@ -160,33 +160,70 @@ export default function ServicesPage() {
         </div>
 
         <div className="card-list">
-          {services.map((service) => (
-            <div key={service.id} className="card" style={{ cursor: 'default' }}>
-              <div>
-                <div className="card-title">{service.name}</div>
-                <div className="card-sub">{service.duration_minutes} min · £{service.price}</div>
+          {services.map((service) =>
+            editingId === service.id ? (
+              <div
+                key={service.id}
+                className="card"
+                style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}
+              >
+                <h3 style={{ marginTop: 0 }}>Edit service</h3>
+
+                <div className="field-group">
+                  <label className="field-label">Name</label>
+                  <input className="field-input" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Duration (minutes)</label>
+                  <input className="field-input" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} />
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Price (£)</label>
+                  <input className="field-input" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
+                </div>
+
+                {error && <p className="error-text">{error}</p>}
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn-primary" onClick={saveService}>Save</button>
+                  <button
+                    onClick={cancelEdit}
+                    style={{ padding: '0.8rem 1.6rem', background: 'transparent', border: '1px solid #ddd', borderRadius: 10, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                  onClick={() => startEdit(service)}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => deleteService(service.id)}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
-                >
-                  Delete
-                </button>
+            ) : (
+              <div key={service.id} className="card" style={{ cursor: 'default' }}>
+                <div>
+                  <div className="card-title">{service.name}</div>
+                  <div className="card-sub">{service.duration_minutes} min · £{service.price}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => startEdit(service)}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteService(service.id)}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
 
-        {editingId ? (
+        {editingId === 'new' ? (
           <div className="card" style={{ marginTop: '1.5rem', cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
-            <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'Add service' : 'Edit service'}</h3>
+            <h3 style={{ marginTop: 0 }}>Add service</h3>
 
             <div className="field-group">
               <label className="field-label">Name</label>
@@ -215,11 +252,11 @@ export default function ServicesPage() {
               </button>
             </div>
           </div>
-        ) : (
+        ) : !editingId ? (
           <button className="btn-primary" style={{ marginTop: '1.5rem' }} onClick={startAdd}>
             + Add service
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   )

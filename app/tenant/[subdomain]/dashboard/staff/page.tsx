@@ -270,53 +270,13 @@ export default function StaffPage() {
     )
   }
 
-  return (
-    <div className="tenant-app" style={{ ['--brand' as any]: brandColor }}>
-      <div className="tenant-container">
-        <Link href="/dashboard" className="back-link">← Back to dashboard</Link>
-
-        <div className="tenant-hero" style={{ textAlign: 'left', marginTop: '1rem' }}>
-          <h1>Staff</h1>
-        </div>
-
-        <div className="card-list">
-          {staffList.map((member) => (
-            <div key={member.id} className="card" style={{ cursor: 'default' }}>
-              {member.photo_url ? (
-                <img src={member.photo_url} alt={member.name} className="avatar" />
-              ) : (
-                <div className="avatar-fallback">{member.name[0]}</div>
-              )}
-              <div style={{ flex: 1 }}>
-                <div className="card-title">{member.name}</div>
-                <div className="card-sub">{member.role}</div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <Link
-                  href={`/dashboard/staff/${member.id}`}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem' }}
-                >
-                  Calendar
-                </Link>
-                <button
-                  onClick={() => startEdit(member)}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => deleteStaff(member.id)}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {editingId ? (
-          <div className="card" style={{ marginTop: '1.5rem', cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
+  // Rendered inline, in place of whichever staff member is being edited (or
+  // appended below the list when adding a new one), rather than always
+  // appearing at the bottom of the page — otherwise editing the first staff
+  // member in a long list dropped the form somewhere you'd have to scroll to
+  // find.
+  const editForm = editingId ? (
+          <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
             <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'Add staff member' : 'Edit staff member'}</h3>
 
             <div className="field-group">
@@ -453,11 +413,64 @@ export default function StaffPage() {
               </button>
             </div>
           </div>
-        ) : (
+  ) : null
+
+  return (
+    <div className="tenant-app" style={{ ['--brand' as any]: brandColor }}>
+      <div className="tenant-container">
+        <Link href="/dashboard" className="back-link">← Back to dashboard</Link>
+
+        <div className="tenant-hero" style={{ textAlign: 'left', marginTop: '1rem' }}>
+          <h1>Staff</h1>
+        </div>
+
+        <div className="card-list">
+          {staffList.map((member) =>
+            editingId === member.id ? (
+              <div key={member.id}>{editForm}</div>
+            ) : (
+              <div key={member.id} className="card" style={{ cursor: 'default' }}>
+                {member.photo_url ? (
+                  <img src={member.photo_url} alt={member.name} className="avatar" />
+                ) : (
+                  <div className="avatar-fallback">{member.name[0]}</div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <div className="card-title">{member.name}</div>
+                  <div className="card-sub">{member.role}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <Link
+                    href={`/dashboard/staff/${member.id}`}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem' }}
+                  >
+                    Calendar
+                  </Link>
+                  <button
+                    onClick={() => startEdit(member)}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteStaff(member.id)}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+
+        {editingId === 'new' ? (
+          <div style={{ marginTop: '1.5rem' }}>{editForm}</div>
+        ) : !editingId ? (
           <button className="btn-primary" style={{ marginTop: '1.5rem' }} onClick={startAdd}>
             + Add staff member
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   )
