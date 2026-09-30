@@ -222,6 +222,71 @@ export async function sendTrialEndedEmail({
   return { id: data?.id }
 }
 
+function formatDateLong(d: string): string {
+  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+export async function sendInvoiceEmail({
+  ownerEmail,
+  shopName,
+  subdomain,
+  periodStart,
+  periodEnd,
+  staffCount,
+  amountPence,
+  isProration,
+}: {
+  ownerEmail: string
+  shopName: string
+  subdomain: string
+  periodStart: string
+  periodEnd: string
+  staffCount: number
+  amountPence: number
+  isProration: boolean
+}) {
+  if (!ownerEmail) return { error: 'Missing owner email' }
+
+  const amount = `£${(amountPence / 100).toFixed(2)}`
+  const periodLine = `${formatDateLong(periodStart)} – ${formatDateLong(periodEnd)}`
+  const staffLine =
+    staffCount > 4
+      ? `${staffCount} staff members (includes 4, plus ${staffCount - 4} extra at £2.50/month each)`
+      : `${staffCount} staff member${staffCount === 1 ? '' : 's'} (included in the base fee)`
+
+  const subject = isProration
+    ? `Your TrimBooking invoice — ${shopName} (first, part-month bill)`
+    : `Your TrimBooking invoice for ${new Date(periodStart).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} — ${shopName}`
+
+  const { data, error } = await resend.emails.send({
+    from: 'TrimBooking <hello@trimbooking.co.uk>',
+    to: ownerEmail,
+    subject,
+    html: `
+      <p>Hi there,</p>
+      <p>Here's your ${isProration ? 'first' : 'latest'} invoice for <strong>${shopName}</strong> (${subdomain}.trimbooking.co.uk):</p>
+      <table cellpadding="0" cellspacing="0" style="margin: 1rem 0; font-size: 0.95rem;">
+        <tr><td style="padding: 2px 12px 2px 0; color: #555;">Billing period</td><td><strong>${periodLine}</strong></td></tr>
+        <tr><td style="padding: 2px 12px 2px 0; color: #555;">Staff</td><td>${staffLine}</td></tr>
+        <tr><td style="padding: 2px 12px 2px 0; color: #555;">Amount due</td><td><strong>${amount}</strong></td></tr>
+      </table>
+      ${
+        isProration
+          ? `<p>This covers the rest of this month from your sign-up date. From next month you'll be invoiced on the 1st, in advance, for the full month ahead.</p>`
+          : `<p>This covers the month ahead, based on your current number of staff.</p>`
+      }
+      <p>Payment instructions will follow separately — no need to do anything yet. If you have any questions in the meantime, just reply to this email or reach us at
+      <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a>.</p>
+    `,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
+
 export async function sendStaffPortalEmail({
   type,
   tenantName,

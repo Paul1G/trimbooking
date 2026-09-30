@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { slugifySubdomain, validateSubdomain } from '@/lib/subdomain'
-import { sendWelcomeEmail } from '@/lib/email'
+import { sendWelcomeEmail, sendInvoiceEmail } from '@/lib/email'
 import { addDomainToVercelProject } from '@/lib/vercel'
+import { prorateSignupInvoice, startOfNextMonth } from '@/lib/billing'
 
 // Sensible defaults for a brand new shop — open Mon–Sat, closed Sunday.
 // Keys match lib/availability.ts's dayKeyFor() (sun, mon, tue, wed, thu, fri, sat).
@@ -75,18 +76,26 @@ export async function POST(req: NextRequest) {
   }
 
   const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const now = new Date()
 
-  const { error: tenantError } = await supabaseAdmin.from('tenants').insert({
-    name: shopName,
-    subdomain,
-    owner_id: created.user.id,
-    brand_color: '#111111',
-    text_color: '#111111',
-    background_color: '#ffffff',
-    font_family: 'system',
-    opening_hours: DEFAULT_OPENING_HOURS,
-    trial_ends_at: trialEndsAt,
-  })
+  const { data: tenantRow, error: tenantError } = await supabaseAdmin
+    .from('tenants')
+    .insert({
+      name: shopName,
+      subdomain,
+      owner_id: created.user.id,
+      brand_color: '#111111',
+      text_color: '#111111',
+      background_color: '#ffffff',
+      font_family: 'system',
+      opening_hours: DEFAULT_OPENING_HOURS,
+      trial_ends_at: trialEndsAt,
+      // Regular monthly invoices start from the 1st of next month — the
+      // prorated invoice raised below covers the gap between now and then.
+      next_invoice_at: startOfNextMonth(now).toISOString(),
+    })
+    .select('id')
+    .single()
 
   if (tenantError) {
     // Roll back the auth user so a failed signup doesn't leave an orphaned account.
@@ -110,6 +119,44 @@ export async function POST(req: NextRequest) {
   sendWelcomeEmail({ ownerEmail: email, shopName, subdomain }).catch(() => {
     // Provisioning already succeeded; a failed welcome email shouldn't block signup.
   })
+
+  // Raise and email the prorated first invoice, covering sign-up day through
+  // the end of this calendar month. A brand new shop has no staff yet, so
+  // this is just the base fee pro-rated — never blocks signup if it fails.
+  if (tenantRow?.id) {
+    const proration = prorateSignupInvoice(now, 0)
+    const { data: invoiceRow } = await supabaseAdmin
+      .from('invoices')
+      .insert({
+        tenant_id: tenantRow.id,
+        period_start: proration.periodStart,
+        period_end: proration.periodEnd,
+        staff_count: proration.staffCount,
+        amount_pence: proration.amountPence,
+        is_proration: true,
+      })
+      .select('id')
+      .maybeSingle()
+
+    sendInvoiceEmail({
+      ownerEmail: email,
+      shopName,
+      subdomain,
+      periodStart: proration.periodStart,
+      periodEnd: proration.periodEnd,
+      staffCount: proration.staffCount,
+      amountPence: proration.amountPence,
+      isProration: true,
+    })
+      .then((result) => {
+        if (!result.error && invoiceRow?.id) {
+          return supabaseAdmin.from('invoices').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', invoiceRow.id)
+        }
+      })
+      .catch(() => {
+        // Provisioning already succeeded; a failed invoice email shouldn't block signup.
+      })
+  }
 
   return NextResponse.json({ subdomain })
 }

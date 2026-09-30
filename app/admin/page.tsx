@@ -16,6 +16,36 @@ type Tenant = {
   trial_ends_at: string | null
 }
 
+type Invoice = {
+  id: string
+  tenant_id: string
+  period_start: string
+  period_end: string
+  staff_count: number
+  amount_pence: number
+  status: 'pending' | 'sent' | 'paid' | 'void'
+  is_proration: boolean
+  sent_at: string | null
+  paid_at: string | null
+  created_at: string
+  tenants: { name: string; subdomain: string } | null
+}
+
+function money(pence: number): string {
+  return `£${(pence / 100).toFixed(2)}`
+}
+
+function dateLabel(d: string): string {
+  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function invoiceStatusStyle(status: Invoice['status']) {
+  if (status === 'paid') return { bg: '#dcfce7', color: '#166534' }
+  if (status === 'void') return { bg: '#f3f4f6', color: '#374151' }
+  if (status === 'sent') return { bg: '#fef9c3', color: '#854d0e' }
+  return { bg: '#fee2e2', color: '#991b1b' }
+}
+
 function trialLabel(t: Tenant): { text: string; bg: string; color: string } {
   if (t.paid) return { text: 'Paid', bg: '#dcfce7', color: '#166534' }
   if (!t.trial_ends_at) return { text: 'No trial set', bg: '#f3f4f6', color: '#374151' }
@@ -37,6 +67,9 @@ export default function AdminPage() {
   const [actionError, setActionError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [resetSent, setResetSent] = useState(false)
+  const [tab, setTab] = useState<'shops' | 'invoices'>('shops')
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [invoicesLoaded, setInvoicesLoaded] = useState(false)
 
   async function authedFetch(path: string, options: RequestInit = {}) {
     const { data } = await supabase.auth.getSession()
@@ -61,6 +94,55 @@ export default function AdminPage() {
     const result = await res.json()
     setTenants(result.tenants || [])
     setAuthorized(true)
+  }
+
+  async function loadInvoices() {
+    const res = await authedFetch('/api/admin/invoices')
+    if (!res.ok) return
+    const result = await res.json()
+    setInvoices(result.invoices || [])
+    setInvoicesLoaded(true)
+  }
+
+  useEffect(() => {
+    if (tab === 'invoices' && !invoicesLoaded && authorized) {
+      loadInvoices()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, authorized])
+
+  async function markInvoiceStatus(inv: Invoice, status: Invoice['status']) {
+    setBusyId(inv.id)
+    setActionError('')
+    const res = await authedFetch(`/api/admin/invoices/${inv.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    })
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}))
+      setActionError(result.error || 'Could not update this invoice.')
+      setBusyId(null)
+      return
+    }
+    await loadInvoices()
+    setBusyId(null)
+  }
+
+  async function resendInvoice(inv: Invoice) {
+    setBusyId(inv.id)
+    setActionError('')
+    const res = await authedFetch(`/api/admin/invoices/${inv.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ resend: true }),
+    })
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}))
+      setActionError(result.error || 'Could not send this invoice.')
+      setBusyId(null)
+      return
+    }
+    await loadInvoices()
+    setBusyId(null)
   }
 
   useEffect(() => {
@@ -242,12 +324,76 @@ export default function AdminPage() {
     <div className="home">
       <div className="admin-wrap">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.6rem' }}>Shops</h1>
+          <h1 style={{ margin: 0, fontSize: '1.6rem' }}>{tab === 'shops' ? 'Shops' : 'Invoices'}</h1>
           <button className="admin-btn" onClick={handleLogout}>Log out</button>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <button
+            className="admin-btn"
+            style={tab === 'shops' ? { background: '#111', color: '#fff', borderColor: '#111' } : undefined}
+            onClick={() => setTab('shops')}
+          >
+            Shops
+          </button>
+          <button
+            className="admin-btn"
+            style={tab === 'invoices' ? { background: '#111', color: '#fff', borderColor: '#111' } : undefined}
+            onClick={() => setTab('invoices')}
+          >
+            Invoices
+          </button>
         </div>
 
         {actionError && <p style={{ color: '#dc2626' }}>{actionError}</p>}
 
+        {tab === 'invoices' && (
+          <div className="admin-shop-list">
+            {invoices.map((inv) => (
+              <div key={inv.id} className="admin-shop-card">
+                <div style={{ flex: '1 1 220px' }}>
+                  <div className="admin-shop-name">{inv.tenants?.name || 'Unknown shop'}</div>
+                  <div className="admin-shop-sub">{inv.tenants?.subdomain}.trimbooking.co.uk</div>
+                  <div className="admin-shop-sub">
+                    {dateLabel(inv.period_start)} – {dateLabel(inv.period_end)}
+                    {inv.is_proration ? ' (part month)' : ''} · {inv.staff_count} staff
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-start' }}>
+                  <span className="admin-badge" style={invoiceStatusStyle(inv.status)}>
+                    {inv.status}
+                  </span>
+                  <span style={{ fontWeight: 700 }}>{money(inv.amount_pence)}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {inv.status !== 'paid' && (
+                    <button className="admin-btn" onClick={() => markInvoiceStatus(inv, 'paid')} disabled={busyId === inv.id}>
+                      Mark paid
+                    </button>
+                  )}
+                  {inv.status === 'paid' && (
+                    <button className="admin-btn" onClick={() => markInvoiceStatus(inv, 'sent')} disabled={busyId === inv.id}>
+                      Mark unpaid
+                    </button>
+                  )}
+                  <button className="admin-btn" onClick={() => resendInvoice(inv)} disabled={busyId === inv.id}>
+                    {inv.status === 'pending' ? 'Send' : 'Resend'}
+                  </button>
+                  {inv.status !== 'void' && (
+                    <button className="admin-btn admin-btn-danger" onClick={() => markInvoiceStatus(inv, 'void')} disabled={busyId === inv.id}>
+                      Void
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {invoices.length === 0 && <p style={{ color: 'var(--muted)' }}>No invoices yet.</p>}
+          </div>
+        )}
+
+        {tab === 'shops' && (
         <div className="admin-shop-list">
           {tenants.map((t) => (
             <div key={t.id} className="admin-shop-card">
@@ -292,6 +438,7 @@ export default function AdminPage() {
           ))}
           {tenants.length === 0 && <p style={{ color: 'var(--muted)' }}>No shops yet.</p>}
         </div>
+        )}
       </div>
     </div>
   )

@@ -27,6 +27,9 @@ export default function GuidePage() {
           <Link href="/how-it-works" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
             How it works
           </Link>
+          <Link href="/pricing" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
+            Pricing
+          </Link>
           <Link href="/guide" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
             User guide
           </Link>
@@ -238,6 +241,7 @@ export default function GuidePage() {
         <div className="home-footer-links">
           <Link href="/">Home</Link>
           <Link href="/how-it-works">How it works</Link>
+          <Link href="/pricing">Pricing</Link>
           <Link href="/guide">User guide</Link>
           <Link href="/about">About &amp; support</Link>
           <Link href="/signup">Get started</Link>
