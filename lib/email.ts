@@ -156,6 +156,40 @@ export function buildBookingEmail({
   return null
 }
 
+export async function sendWelcomeEmail({
+  ownerEmail,
+  shopName,
+  subdomain,
+}: {
+  ownerEmail: string
+  shopName: string
+  subdomain: string
+}) {
+  if (!ownerEmail) return { error: 'Missing owner email' }
+
+  const loginUrl = `https://${subdomain}.trimbooking.co.uk/login`
+
+  const { data, error } = await resend.emails.send({
+    from: 'TrimBooking <hello@trimbooking.co.uk>',
+    to: ownerEmail,
+    subject: `Welcome to TrimBooking, ${shopName}!`,
+    html: `
+      <p>Hi there,</p>
+      <p>Your shop <strong>${shopName}</strong> is ready to go on TrimBooking.</p>
+      <p>Your booking page: <a href="https://${subdomain}.trimbooking.co.uk">${subdomain}.trimbooking.co.uk</a></p>
+      <p>Log in to your dashboard to add your services, staff and opening hours before sharing your link with customers:</p>
+      <p><a href="${loginUrl}">${loginUrl}</a></p>
+      <p>Welcome aboard!</p>
+    `,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
+
 export async function sendBookingEmail(params: BookingEmailParams) {
   if (!params.customerEmail) {
     return { error: 'Missing customer email' }

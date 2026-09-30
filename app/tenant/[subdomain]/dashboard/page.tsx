@@ -11,6 +11,8 @@ export default function DashboardPage() {
   const params = useParams()
   const [tenant, setTenant] = useState<any>(null)
   const [checking, setChecking] = useState(true)
+  const [serviceCount, setServiceCount] = useState<number | null>(null)
+  const [staffCount, setStaffCount] = useState<number | null>(null)
 
   useEffect(() => {
     async function checkAccess() {
@@ -35,6 +37,13 @@ export default function DashboardPage() {
 
       setTenant(tenantData)
       setChecking(false)
+
+      const [{ count: services }, { count: staff }] = await Promise.all([
+        supabase.from('services').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantData.id),
+        supabase.from('staff').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantData.id),
+      ])
+      setServiceCount(services ?? 0)
+      setStaffCount(staff ?? 0)
     }
     checkAccess()
   }, [params.subdomain, router])
@@ -60,6 +69,27 @@ export default function DashboardPage() {
         <div className="tenant-hero">
           <h1>{tenant.name} — Dashboard</h1>
         </div>
+
+        {(serviceCount === 0 || staffCount === 0) && (
+          <div style={{ background: '#fef9c3', border: '1px solid #eab308', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <div style={{ fontWeight: 700, color: '#854d0e', marginBottom: '0.4rem' }}>Finish setting up your shop</div>
+            <p style={{ margin: '0 0 0.75rem', color: '#854d0e', fontSize: '0.9rem' }}>
+              Customers can&apos;t book until you&apos;ve added at least one service and one staff member.
+            </p>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              {serviceCount === 0 && (
+                <Link href="/dashboard/services" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#854d0e', textDecoration: 'underline' }}>
+                  Add a service →
+                </Link>
+              )}
+              {staffCount === 0 && (
+                <Link href="/dashboard/staff" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#854d0e', textDecoration: 'underline' }}>
+                  Add a staff member →
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="card-list">
           <Link href="/dashboard/services" className="card">

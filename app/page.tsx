@@ -62,7 +62,7 @@ export default function Home() {
     <div className="home">
       <nav className="home-nav">
         <span className="logo">TrimBooking</span>
-        <a href="mailto:hello@trimbooking.co.uk" className="nav-cta">Get started</a>
+        <Link href="/signup" className="nav-cta">Get started</Link>
       </nav>
 
       <header className="home-hero">
@@ -72,7 +72,7 @@ export default function Home() {
           seconds, and you manage every appointment from one simple dashboard.
         </p>
         <div className="home-hero-actions">
-          <a href="mailto:hello@trimbooking.co.uk" className="btn-dark">Get started</a>
+          <Link href="/signup" className="btn-dark">Get started</Link>
           <Link href={DEMO_URL} className="btn-outline">See a live example</Link>
         </div>
       </header>
@@ -108,7 +108,7 @@ export default function Home() {
       <section className="home-cta">
         <h2>Ready to stop taking bookings by phone?</h2>
         <p>Get your shop set up with its own booking page — no cost to try it out.</p>
-        <a href="mailto:hello@trimbooking.co.uk" className="btn-dark">Get started</a>
+        <Link href="/signup" className="btn-dark">Get started</Link>
       </section>
 
       <footer className="home-footer">
