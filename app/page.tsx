@@ -111,6 +111,11 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <p style={{ textAlign: "center", marginTop: "2rem" }}>
+          <Link href="/how-it-works" style={{ color: "var(--ink)", fontWeight: 600, textDecoration: "none" }}>
+            See how it works in more detail →
+          </Link>
+        </p>
       </section>
 
       <section className="home-cta">
