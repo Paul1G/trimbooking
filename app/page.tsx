@@ -1,7 +1,7 @@
 import Link from "next/link";
 import "./home.css";
 
-const DEMO_URL = "https://demo.trimbooking.co.uk";
+const DEMO_URL = "https://gloss-glow-studio.trimbooking.co.uk";
 
 const features = [
   {
