@@ -1,10 +1,12 @@
 // Shared rules for shop subdomains (yourshop.trimbooking.co.uk), used by both
 // the signup form's live availability check and the signup API itself.
 
+// 'demo' is intentionally NOT reserved — it's used for TrimBooking's own
+// public demo shop (see homepage), created through this same signup flow.
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'app', 'api', 'admin', 'dashboard', 'mail', 'email', 'ftp',
   'ns1', 'ns2', 'autodiscover', 'cpanel', 'webmail', 'blog', 'support',
-  'help', 'status', 'staging', 'dev', 'test', 'demo', 'trimbooking',
+  'help', 'status', 'staging', 'dev', 'test', 'trimbooking',
   'shop', 'manage', 'login', 'signup', 'static', 'assets', 'cdn', 'docs',
 ])
 

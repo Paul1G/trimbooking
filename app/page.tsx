@@ -1,7 +1,7 @@
 import Link from "next/link";
 import "./home.css";
 
-const DEMO_URL = "https://lipstick-lashes-and-locks.trimbooking.co.uk";
+const DEMO_URL = "https://demo.trimbooking.co.uk";
 
 const features = [
   {
@@ -73,7 +73,7 @@ export default function Home() {
         </p>
         <div className="home-hero-actions">
           <Link href="/signup" className="btn-dark">Get started</Link>
-          <Link href={DEMO_URL} className="btn-outline">See a live example</Link>
+          <Link href={DEMO_URL} className="btn-outline">See a demo</Link>
         </div>
       </header>
 
