@@ -150,6 +150,12 @@ export default function DashboardPage() {
               <div className="card-sub">View and manage appointments</div>
             </div>
           </Link>
+          <Link href="/dashboard/customers" className="card">
+            <div>
+              <div className="card-title">Customers</div>
+              <div className="card-sub">Visit history and who&apos;s due to rebook</div>
+            </div>
+          </Link>
           <Link href="/dashboard/hours" className="card">
             <div>
               <div className="card-title">Opening Hours</div>

@@ -331,6 +331,45 @@ export async function sendStaffPortalEmail({
   return { id: data?.id }
 }
 
+export async function sendRebookNudgeEmail({
+  tenantName,
+  subdomain,
+  customerEmail,
+  customerName,
+  lastVisitLabel,
+  intervalLabel,
+}: {
+  tenantName: string
+  subdomain: string
+  customerEmail: string
+  customerName: string
+  lastVisitLabel: string
+  intervalLabel: string
+}) {
+  if (!customerEmail) return { error: 'Missing customer email' }
+
+  const bookUrl = `https://${subdomain}.trimbooking.co.uk`
+
+  const { data, error } = await resend.emails.send({
+    from: fromAddress(tenantName),
+    to: customerEmail,
+    subject: `Time for a rebook? — ${tenantName}`,
+    html: `
+      <p>Hi ${customerName},</p>
+      <p>It's been a little while since your last visit to <strong>${tenantName}</strong> (${lastVisitLabel}).
+      Based on how often you usually come in (about every ${intervalLabel}), you might be about due!</p>
+      <p><a href="${bookUrl}">Book your next appointment</a></p>
+      <p>See you soon!</p>
+    `,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
+
 export async function sendBookingEmail(params: BookingEmailParams) {
   if (!params.customerEmail) {
     return { error: 'Missing customer email' }
