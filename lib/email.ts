@@ -7,6 +7,7 @@ export type BookingEmailType =
   | 'confirmed'
   | 'declined'
   | 'cancelled'
+  | 'rescheduled'
   | 'reminder_week'
   | 'reminder_day'
   | 'thank_you'
@@ -19,6 +20,14 @@ export type BookingEmailParams = {
   serviceName?: string
   staffName?: string
   startTime: string
+  // Link to the customer's self-service "manage your booking" page, included
+  // where relevant so they can reschedule or cancel without contacting the shop.
+  manageUrl?: string
+}
+
+function manageLineHtml(manageUrl?: string) {
+  if (!manageUrl) return ''
+  return `<p style="margin-top:1.25rem"><a href="${manageUrl}">Manage or reschedule this booking</a></p>`
 }
 
 // From address: uses the shop's subdomain so it's clearly tied to that shop,
@@ -34,6 +43,7 @@ export function buildBookingEmail({
   serviceName,
   staffName,
   startTime,
+  manageUrl,
 }: BookingEmailParams): { subject: string; html: string } | null {
   const dateStr = new Date(startTime).toLocaleString('en-GB', {
     weekday: 'long',
@@ -51,6 +61,7 @@ export function buildBookingEmail({
         <p>Thanks for your booking request with <strong>${tenantName}</strong>.</p>
         <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
         <p>We'll email you as soon as the shop confirms your appointment.</p>
+        ${manageLineHtml(manageUrl)}
       `,
     }
   }
@@ -63,6 +74,20 @@ export function buildBookingEmail({
         <p>Good news — your appointment with <strong>${tenantName}</strong> is confirmed.</p>
         <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
         <p>See you then!</p>
+        ${manageLineHtml(manageUrl)}
+      `,
+    }
+  }
+
+  if (type === 'rescheduled') {
+    return {
+      subject: `Your booking has been moved — ${tenantName}`,
+      html: `
+        <p>Hi ${customerName},</p>
+        <p>Your booking with <strong>${tenantName}</strong> has been moved to a new time:</p>
+        <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
+        <p>The shop will confirm this new time shortly.</p>
+        ${manageLineHtml(manageUrl)}
       `,
     }
   }
@@ -98,7 +123,8 @@ export function buildBookingEmail({
         <p>Hi ${customerName},</p>
         <p>Just a heads up that your appointment with <strong>${tenantName}</strong> is coming up next week.</p>
         <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
-        <p>Need to change anything? Get in touch with the shop directly.</p>
+        <p>Need to change anything?</p>
+        ${manageLineHtml(manageUrl)}
       `,
     }
   }
@@ -111,6 +137,7 @@ export function buildBookingEmail({
         <p>This is a reminder that your appointment with <strong>${tenantName}</strong> is tomorrow.</p>
         <p><strong>${serviceName}</strong> with ${staffName}<br/>${dateStr}</p>
         <p>See you then!</p>
+        ${manageLineHtml(manageUrl)}
       `,
     }
   }

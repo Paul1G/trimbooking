@@ -14,13 +14,14 @@ type BookingRow = {
   week_reminder_sent_at: string | null
   day_reminder_sent_at: string | null
   thank_you_sent_at: string | null
-  tenants: { name: string } | null
+  manage_token: string | null
+  tenants: { name: string; subdomain: string } | null
   services: { name: string } | null
   staff: { name: string } | null
 }
 
 const SELECT_FIELDS =
-  'id, customer_name, customer_email, start_time, end_time, status, week_reminder_sent_at, day_reminder_sent_at, thank_you_sent_at, tenants:tenant_id(name), services:service_id(name), staff:staff_id(name)'
+  'id, customer_name, customer_email, start_time, end_time, status, week_reminder_sent_at, day_reminder_sent_at, thank_you_sent_at, manage_token, tenants:tenant_id(name, subdomain), services:service_id(name), staff:staff_id(name)'
 
 // UTC day boundaries `daysFromNow` days from today (0 = today).
 function dayBounds(daysFromNow: number) {
@@ -60,6 +61,10 @@ async function sendForWindow({
   const failures: string[] = []
 
   for (const booking of bookings) {
+    const manageUrl = booking.manage_token && booking.tenants?.subdomain
+      ? `https://${booking.tenants.subdomain}.trimbooking.co.uk/manage/${booking.manage_token}`
+      : undefined
+
     const result = await sendBookingEmail({
       type,
       tenantName: booking.tenants?.name || '',
@@ -68,6 +73,7 @@ async function sendForWindow({
       serviceName: booking.services?.name,
       staffName: booking.staff?.name,
       startTime: booking.start_time,
+      manageUrl,
     })
 
     if (result.error) {

@@ -57,7 +57,7 @@ export default async function BookPage({
           <p>£{service.price} · {service.duration_minutes} min</p>
         </div>
 
-        <BookingForm tenantId={tenant.id} tenantName={tenant.name} service={service} staffList={staff || []} shopOpeningHours={tenant.opening_hours || {}} />
+        <BookingForm tenantId={tenant.id} tenantName={tenant.name} subdomain={subdomain} service={service} staffList={staff || []} shopOpeningHours={tenant.opening_hours || {}} />
       </div>
     </div>
   )

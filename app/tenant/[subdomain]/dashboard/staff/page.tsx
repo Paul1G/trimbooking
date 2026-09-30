@@ -244,6 +244,12 @@ export default function StaffPage() {
                 <div className="card-sub">{member.role}</div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Link
+                  href={`/dashboard/staff/${member.id}`}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem' }}
+                >
+                  Calendar
+                </Link>
                 <button
                   onClick={() => startEdit(member)}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}

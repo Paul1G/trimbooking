@@ -4,7 +4,7 @@ import { sendBookingEmail } from '@/lib/email'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { type, tenantName, customerEmail, customerName, serviceName, staffName, startTime } = body
+    const { type, tenantName, customerEmail, customerName, serviceName, staffName, startTime, manageUrl } = body
 
     if (!customerEmail || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       serviceName,
       staffName,
       startTime,
+      manageUrl,
     })
 
     if (result.error) {

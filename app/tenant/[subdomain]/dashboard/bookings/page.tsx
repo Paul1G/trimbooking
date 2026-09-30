@@ -14,6 +14,7 @@ type Booking = {
   start_time: string
   end_time: string
   status: string
+  manage_token: string | null
   staff: { name: string } | null
   services: { name: string } | null
 }
@@ -83,7 +84,7 @@ export default function BookingsPage() {
   async function loadBookings(tid: string) {
     const { data } = await supabase
       .from('bookings')
-      .select('id, customer_name, customer_phone, customer_email, start_time, end_time, status, staff:staff_id(name), services:service_id(name)')
+      .select('id, customer_name, customer_phone, customer_email, start_time, end_time, status, manage_token, staff:staff_id(name), services:service_id(name)')
       .eq('tenant_id', tid)
       .order('start_time', { ascending: true })
     setBookings((data as any) || [])
@@ -105,6 +106,10 @@ export default function BookingsPage() {
     }
 
     if (booking && (status === 'confirmed' || status === 'declined' || status === 'cancelled')) {
+      const manageUrl = booking.manage_token
+        ? `https://${params.subdomain}.trimbooking.co.uk/manage/${booking.manage_token}`
+        : undefined
+
       fetch('/api/send-booking-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,6 +121,7 @@ export default function BookingsPage() {
           serviceName: booking.services?.name,
           staffName: booking.staff?.name,
           startTime: booking.start_time,
+          manageUrl,
         }),
       }).catch(() => {})
     }
