@@ -14,7 +14,8 @@ type Booking = {
   end_time: string
   status: string
   amount_paid: number | null
-  services: { name: string; price: number } | null
+  service_name: string | null
+  service_price: number | null
 }
 
 function statusColors(status: string) {
@@ -101,20 +102,25 @@ export default function StaffCalendarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, selectedDate])
 
+  // Both reads go through owner_get_staff_bookings rather than selecting the
+  // bookings table directly — it checks server-side that the caller actually
+  // owns this tenant before returning anything, so a staff member's earnings
+  // are only ever visible to that shop's owner (or the staff member
+  // themselves, via the separate staff_* functions on their own portal).
   async function loadDay(dateStr: string) {
+    if (!tenantId) return
     setLoadingDay(true)
     const dayStart = new Date(dateStr + 'T00:00:00')
     const dayEnd = new Date(dateStr + 'T23:59:59')
 
-    const { data } = await supabase
-      .from('bookings')
-      .select('id, customer_name, start_time, end_time, status, amount_paid, services:service_id(name, price)')
-      .eq('staff_id', staffId)
-      .gte('start_time', dayStart.toISOString())
-      .lte('start_time', dayEnd.toISOString())
-      .order('start_time', { ascending: true })
+    const { data, error } = await supabase.rpc('owner_get_staff_bookings', {
+      p_tenant_id: tenantId,
+      p_staff_id: staffId,
+      p_range_start: dayStart.toISOString(),
+      p_range_end: dayEnd.toISOString(),
+    })
 
-    const bookings = (data as any) || []
+    const bookings = (!error && data) || []
     setDayBookings(bookings)
 
     const nextAmounts: Record<string, string> = {}
@@ -126,24 +132,25 @@ export default function StaffCalendarPage() {
   }
 
   async function loadMonth(dateStr: string) {
+    if (!tenantId) return
     setMonthLoading(true)
     const d = new Date(dateStr + 'T00:00:00')
     const monthStart = new Date(d.getFullYear(), d.getMonth(), 1)
     const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59)
 
-    const { data } = await supabase
-      .from('bookings')
-      .select('status, amount_paid, services:service_id(price)')
-      .eq('staff_id', staffId)
-      .gte('start_time', monthStart.toISOString())
-      .lte('start_time', monthEnd.toISOString())
+    const { data, error } = await supabase.rpc('owner_get_staff_bookings', {
+      p_tenant_id: tenantId,
+      p_staff_id: staffId,
+      p_range_start: monthStart.toISOString(),
+      p_range_end: monthEnd.toISOString(),
+    })
 
-    const rows = (data as any) || []
+    const rows = (!error && data) || []
     let expected = 0
     let actual = 0
     for (const r of rows) {
       if (r.status !== 'confirmed') continue
-      expected += r.services?.price || 0
+      expected += r.service_price || 0
       actual += r.amount_paid != null ? Number(r.amount_paid) : 0
     }
     setMonthExpected(expected)
@@ -158,6 +165,7 @@ export default function StaffCalendarPage() {
   }
 
   async function saveAmount(bookingId: string) {
+    if (!tenantId) return
     const raw = amounts[bookingId]
     const value = raw === '' ? null : Number(raw)
     if (value !== null && (Number.isNaN(value) || value < 0)) {
@@ -166,25 +174,20 @@ export default function StaffCalendarPage() {
     }
 
     setSavingId(bookingId)
-    // .select() so we can tell a genuine success apart from an update that
-    // silently matched zero rows (e.g. blocked by a row-level security
-    // policy) — Supabase doesn't treat that as an error, so without this the
-    // page would carry on as if the amount had saved, reload, and show the
-    // totals as if the amendment had never happened.
-    const { data, error } = await supabase
-      .from('bookings')
-      .update({ amount_paid: value })
-      .eq('id', bookingId)
-      .eq('staff_id', staffId)
-      .select('id')
+    // Goes through owner_update_staff_payment (SECURITY DEFINER) rather than
+    // updating the bookings table directly — that function checks server-side
+    // that the caller owns this tenant and raises if not, so a failed save is
+    // always a visible error here rather than a silent no-op that leaves the
+    // totals looking like the amendment was never entered.
+    const { error } = await supabase.rpc('owner_update_staff_payment', {
+      p_tenant_id: tenantId,
+      p_booking_id: bookingId,
+      p_amount: value,
+    })
 
     setSavingId(null)
     if (error) {
       alert(error.message)
-      return
-    }
-    if (!data || data.length === 0) {
-      alert('This payment could not be saved. Please refresh the page and try again.')
       return
     }
 
@@ -204,7 +207,7 @@ export default function StaffCalendarPage() {
 
   const dayExpected = dayBookings
     .filter((b) => b.status === 'confirmed')
-    .reduce((sum, b) => sum + (b.services?.price || 0), 0)
+    .reduce((sum, b) => sum + (b.service_price || 0), 0)
   const dayActual = dayBookings
     .filter((b) => b.status === 'confirmed')
     .reduce((sum, b) => sum + (b.amount_paid != null ? Number(b.amount_paid) : 0), 0)
@@ -277,7 +280,7 @@ export default function StaffCalendarPage() {
                 <div style={{ flex: '1 1 200px' }}>
                   <div className="card-title">{time} · {b.customer_name}</div>
                   <div className="card-sub">
-                    {b.services?.name} {b.services?.price != null && `· expected ${money(b.services.price)}`}
+                    {b.service_name} {b.service_price != null && `· expected ${money(b.service_price)}`}
                   </div>
                 </div>
                 <span
@@ -297,7 +300,7 @@ export default function StaffCalendarPage() {
                       step="0.01"
                       value={amounts[b.id] ?? ''}
                       onChange={(e) => setAmounts({ ...amounts, [b.id]: e.target.value })}
-                      placeholder={b.services?.price != null ? String(b.services.price) : '0.00'}
+                      placeholder={b.service_price != null ? String(b.service_price) : '0.00'}
                       style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
                     />
                     <button
