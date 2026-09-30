@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import WeeklyHoursEditor, { WorkingHours } from '../dashboard/WeeklyHoursEditor'
-import BreaksEditor, { BreakWindows } from '../dashboard/BreaksEditor'
+import Link from 'next/link'
 import { toDateStr } from '@/lib/availability'
 import '../tenant.css'
 
@@ -13,8 +12,6 @@ type MyData = {
   name: string
   role: string
   access_level: 'admin' | 'user'
-  working_hours: WorkingHours | null
-  breaks: BreakWindows | null
 }
 
 type Booking = {
@@ -48,6 +45,7 @@ export default function StaffPortalPage() {
   const [brandColor, setBrandColor] = useState('#000000')
   const [checking, setChecking] = useState(true)
   const [me, setMe] = useState<MyData | null>(null)
+  const [isOwnerToo, setIsOwnerToo] = useState(false)
 
   const [selectedDate, setSelectedDate] = useState(() => toDateStr(new Date()))
   const [dayBookings, setDayBookings] = useState<Booking[]>([])
@@ -61,13 +59,6 @@ export default function StaffPortalPage() {
   const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
 
-  const [workingHours, setWorkingHours] = useState<WorkingHours>({})
-  const [breaks, setBreaks] = useState<BreakWindows>({})
-  const [scheduleSaving, setScheduleSaving] = useState(false)
-  const [scheduleStatus, setScheduleStatus] = useState('')
-
-  const [tab, setTab] = useState<'earnings' | 'schedule'>('earnings')
-
   useEffect(() => {
     async function load() {
       const { data: sessionData } = await supabase.auth.getSession()
@@ -79,7 +70,7 @@ export default function StaffPortalPage() {
 
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('id, brand_color, disabled')
+        .select('id, brand_color, disabled, owner_id')
         .eq('subdomain', params.subdomain)
         .single()
 
@@ -102,8 +93,11 @@ export default function StaffPortalPage() {
       setTenantId(tenant.id)
       setBrandColor(tenant.brand_color)
       setMe(myData as MyData)
-      setWorkingHours((myData as MyData).working_hours || {})
-      setBreaks((myData as MyData).breaks || {})
+      // This login might ALSO be the shop owner (their portal email matches
+      // their own owner login, so this staff profile is linked straight to
+      // their account) — in that case, show a way back to the dashboard,
+      // since a genuinely separate staff member has no dashboard to go back to.
+      setIsOwnerToo(tenant.owner_id === user.id)
       setChecking(false)
     }
     load()
@@ -203,25 +197,6 @@ export default function StaffPortalPage() {
     await loadMonth(selectedDate)
   }
 
-  async function saveSchedule() {
-    if (!tenantId) return
-    setScheduleSaving(true)
-    setScheduleStatus('')
-
-    const { error } = await supabase.rpc('staff_update_my_schedule', {
-      p_tenant_id: tenantId,
-      p_working_hours: workingHours,
-      p_breaks: breaks,
-    })
-
-    setScheduleSaving(false)
-    if (error) {
-      setScheduleStatus(error.message)
-      return
-    }
-    setScheduleStatus('Saved!')
-  }
-
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -255,6 +230,8 @@ export default function StaffPortalPage() {
   return (
     <div className="tenant-app" style={{ ['--brand' as any]: brandColor }}>
       <div className="tenant-container">
+        {isOwnerToo && <Link href="/dashboard" className="back-link">← Back to dashboard</Link>}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
           <div className="tenant-hero" style={{ textAlign: 'left', margin: 0 }}>
             <h1>Hi, {me.name}</h1>
@@ -268,35 +245,6 @@ export default function StaffPortalPage() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0' }}>
-          <button
-            onClick={() => setTab('earnings')}
-            style={{
-              padding: '6px 14px', borderRadius: 8,
-              border: tab === 'earnings' ? '2px solid var(--brand)' : '1px solid #ddd',
-              background: tab === 'earnings' ? 'var(--brand)' : '#fff',
-              color: tab === 'earnings' ? '#fff' : '#000',
-              cursor: 'pointer',
-            }}
-          >
-            Bookings &amp; earnings
-          </button>
-          <button
-            onClick={() => setTab('schedule')}
-            style={{
-              padding: '6px 14px', borderRadius: 8,
-              border: tab === 'schedule' ? '2px solid var(--brand)' : '1px solid #ddd',
-              background: tab === 'schedule' ? 'var(--brand)' : '#fff',
-              color: tab === 'schedule' ? '#fff' : '#000',
-              cursor: 'pointer',
-            }}
-          >
-            My schedule
-          </button>
-        </div>
-
-        {tab === 'earnings' && (
-        <>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1.5rem 0' }}>
           <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
             <div className="card-sub">Today&apos;s expected</div>
@@ -400,77 +348,7 @@ export default function StaffPortalPage() {
             )
           })}
         </div>
-
-        </>
-        )}
-
-        {tab === 'schedule' && (
-        <div className="card" style={{ marginTop: '1.5rem', cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
-          <h3 style={{ marginTop: 0 }}>My working hours</h3>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.6rem' }}>
-            {isAdmin
-              ? 'The days and hours you are available to book.'
-              : 'The days and hours you are available to book. Ask the shop owner to make changes.'}
-          </p>
-          {isAdmin ? (
-            <WeeklyHoursEditor value={workingHours} onChange={setWorkingHours} />
-          ) : (
-            <ReadOnlyHours value={workingHours} />
-          )}
-
-          <h3 style={{ marginTop: '1.5rem' }}>My breaks</h3>
-          {isAdmin ? (
-            <BreaksEditor value={breaks} onChange={setBreaks} />
-          ) : (
-            <ReadOnlyBreaks value={breaks} />
-          )}
-
-          {isAdmin && (
-            <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <button className="btn-primary" onClick={saveSchedule} disabled={scheduleSaving}>
-                {scheduleSaving ? 'Saving...' : 'Save schedule'}
-              </button>
-              {scheduleStatus && <span style={{ fontSize: '0.85rem', color: '#166534' }}>{scheduleStatus}</span>}
-            </div>
-          )}
-        </div>
-        )}
       </div>
-    </div>
-  )
-}
-
-const DAY_LABELS: Record<string, string> = {
-  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
-  fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
-}
-
-function ReadOnlyHours({ value }: { value: WorkingHours }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      {Object.keys(DAY_LABELS).map((key) => (
-        <div key={key} style={{ display: 'flex', gap: '0.75rem', padding: '0.4rem 0', borderBottom: '1px solid #f0f0f0', fontSize: '0.9rem' }}>
-          <span style={{ width: 110 }}>{DAY_LABELS[key]}</span>
-          <span style={{ color: value[key] ? 'inherit' : '#999' }}>
-            {value[key] ? `${value[key][0]} to ${value[key][1]}` : 'Closed'}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function ReadOnlyBreaks({ value }: { value: BreakWindows }) {
-  const days = Object.keys(value).filter((k) => (value[k] || []).length > 0)
-  if (days.length === 0) return <p style={{ color: '#999', fontSize: '0.9rem' }}>No breaks set.</p>
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      {days.map((key) => (
-        <div key={key} style={{ fontSize: '0.9rem' }}>
-          <strong>{DAY_LABELS[key] || key}:</strong>{' '}
-          {(value[key] || []).map((w) => `${w[0]}–${w[1]}`).join(', ')}
-        </div>
-      ))}
     </div>
   )
 }
