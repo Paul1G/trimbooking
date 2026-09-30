@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import WeeklyHoursEditor, { WorkingHours } from '../dashboard/WeeklyHoursEditor'
 import BreaksEditor, { BreakWindows } from '../dashboard/BreaksEditor'
+import { toDateStr } from '@/lib/availability'
 import '../tenant.css'
 
 type MyData = {
@@ -25,10 +26,6 @@ type Booking = {
   amount_paid: number | null
   service_name: string | null
   service_price: number | null
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0]
 }
 
 function statusColors(status: string) {

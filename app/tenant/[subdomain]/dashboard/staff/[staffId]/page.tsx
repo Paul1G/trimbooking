@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { toDateStr } from '@/lib/availability'
 import '../../../tenant.css'
 
 type Booking = {
@@ -14,10 +15,6 @@ type Booking = {
   status: string
   amount_paid: number | null
   services: { name: string; price: number } | null
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0]
 }
 
 function statusColors(status: string) {

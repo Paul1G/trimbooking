@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getSlotsForDay } from '@/lib/availability'
+import { getSlotsForDay, toDateStr } from '@/lib/availability'
 
 export type WorkingHours = Record<string, [string, string]>
 export type BreakWindows = Record<string, [string, string][]>
@@ -10,10 +10,6 @@ export type PickerStaff = {
   id: string
   working_hours: WorkingHours
   breaks?: BreakWindows | null
-}
-
-function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0]
 }
 
 function startOfWeek(d: Date): Date {

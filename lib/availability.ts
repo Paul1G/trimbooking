@@ -2,8 +2,22 @@ type WorkingHours = Record<string, [string, string]>
 type BreakWindows = Record<string, [string, string][]>
 type HolidayRange = { start_date: string; end_date: string }
 
+// Renders a Date as its own local calendar date ("YYYY-MM-DD") — NOT
+// `d.toISOString().split('T')[0]`, which converts to UTC first. For anyone
+// in a positive UTC offset (e.g. UK during BST, UTC+1), a Date built from
+// local midnight sits at 23:00 the previous day in UTC, so toISOString()
+// silently returns the day before. That mismatch is exactly what made
+// "next day" look like it did nothing (it round-tripped back to the same
+// date) and made bookings save under the wrong calendar day.
+export function toDateStr(d: Date): string {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function dateStr(d: Date): string {
-  return d.toISOString().split('T')[0]
+  return toDateStr(d)
 }
 
 export function isClosedByHoliday(date: Date, holidays: HolidayRange[]): boolean {
