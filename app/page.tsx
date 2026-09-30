@@ -131,6 +131,34 @@ export default function Home() {
         </p>
       </section>
 
+      <section className="home-section home-section-soft">
+        <div className="home-eyebrow">Pricing</div>
+        <h2 className="home-section-title">One simple plan</h2>
+        <div
+          style={{
+            maxWidth: 420,
+            margin: "0 auto",
+            background: "#fff",
+            border: "1px solid var(--line)",
+            borderRadius: 16,
+            padding: "2rem",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ margin: "0.25rem 0" }}>
+            <span style={{ fontSize: "2.5rem", fontWeight: 700 }}>£20</span>
+            <span style={{ fontSize: "1rem", color: "var(--muted)" }}>/month</span>
+          </div>
+          <p style={{ color: "var(--muted)", margin: "0.25rem 0 1.25rem" }}>
+            Includes up to <strong>4 staff members</strong>, then just{" "}
+            <strong>£2.50/month</strong> per extra staff member.
+          </p>
+          <Link href="/pricing" style={{ color: "var(--ink)", fontWeight: 600, textDecoration: "none" }}>
+            See full pricing details →
+          </Link>
+        </div>
+      </section>
+
       <section className="home-cta">
         <h2>Ready to stop taking bookings by phone?</h2>
         <p>Get your shop set up with its own booking page — free for 30 days, no card required.</p>
