@@ -19,6 +19,7 @@ export default function SignupPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState<string | null>(null)
+  const [siteReady, setSiteReady] = useState(false)
 
   // Auto-suggested from the shop name until the person edits the address themselves —
   // computed at render time rather than mirrored into its own state.
@@ -36,6 +37,44 @@ export default function SignupPage() {
     }, 400)
     return () => clearTimeout(timeout)
   }, [subdomain, subdomainError])
+
+  // Once signup succeeds, a fresh Vercel domain can take up to a minute or so
+  // to finish issuing its SSL certificate — poll until the shop's own login
+  // page actually responds before sending the owner there, rather than
+  // handing them a link that may still 404 or show a certificate warning.
+  useEffect(() => {
+    if (!done) return
+    let cancelled = false
+    let attempts = 0
+    const maxAttempts = 40 // ~2 minutes at 3s intervals
+
+    async function poll() {
+      if (cancelled) return
+      attempts += 1
+      try {
+        const res = await fetch(`/api/signup/status?subdomain=${encodeURIComponent(done as string)}`)
+        const result = await res.json()
+        if (result.ready) {
+          if (!cancelled) setSiteReady(true)
+          return
+        }
+      } catch {
+        // Keep polling — a transient failure here isn't fatal.
+      }
+      if (cancelled) return
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 3000)
+      } else {
+        // Give up waiting so the owner isn't stuck forever; the link may just need a retry.
+        setSiteReady(true)
+      }
+    }
+
+    poll()
+    return () => {
+      cancelled = true
+    }
+  }, [done])
 
   const isChecking = !subdomainError && !!subdomain && lastChecked?.subdomain !== subdomain
   const remoteStatus: 'checking' | 'available' | 'taken' | null = subdomainError
@@ -97,11 +136,20 @@ export default function SignupPage() {
           <div className="signup-card" style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: '1.6rem', marginTop: 0 }}>Your shop is ready! 🎉</h1>
             <p style={{ color: 'var(--muted)' }}>
-              <strong>{done}.trimbooking.co.uk</strong> is live. Log in to add your services, staff and opening hours.
+              <strong>{done}.trimbooking.co.uk</strong> is being set up.
             </p>
-            <a className="btn-dark" href={loginUrl} style={{ marginTop: '1rem' }}>
-              Log in to your dashboard
-            </a>
+            {siteReady ? (
+              <>
+                <p style={{ color: 'var(--muted)' }}>Log in to add your services, staff and opening hours.</p>
+                <a className="btn-dark" href={loginUrl} style={{ marginTop: '1rem' }}>
+                  Log in to your dashboard
+                </a>
+              </>
+            ) : (
+              <p style={{ color: '#999', fontSize: '0.9rem' }}>
+                Setting up your shop&apos;s web address — this usually takes under a minute...
+              </p>
+            )}
           </div>
         </div>
       </div>
