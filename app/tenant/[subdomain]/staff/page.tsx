@@ -131,9 +131,20 @@ export default function StaffPortalPage() {
     setDayBookings(bookings)
     setDayError(error ? error.message : '')
 
+    // Assume a confirmed booking was paid in full (the expected service
+    // price) until the amount is explicitly amended — so the box shows a
+    // real, saveable value rather than a placeholder that looks the same
+    // but isn't actually recorded. Only fall back to blank when there's no
+    // expected price to assume either.
     const nextAmounts: Record<string, string> = {}
     for (const b of bookings) {
-      nextAmounts[b.id] = b.amount_paid != null ? String(b.amount_paid) : ''
+      if (b.amount_paid != null) {
+        nextAmounts[b.id] = String(b.amount_paid)
+      } else if (b.service_price != null) {
+        nextAmounts[b.id] = String(b.service_price)
+      } else {
+        nextAmounts[b.id] = ''
+      }
     }
     setAmounts(nextAmounts)
     setLoadingDay(false)
@@ -158,7 +169,8 @@ export default function StaffPortalPage() {
     for (const r of rows) {
       if (r.status !== 'confirmed') continue
       expected += r.service_price || 0
-      actual += r.amount_paid != null ? Number(r.amount_paid) : 0
+      // Same "paid in full unless amended" assumption as the day view below.
+      actual += r.amount_paid != null ? Number(r.amount_paid) : (r.service_price || 0)
     }
     setMonthExpected(expected)
     setMonthActual(actual)
@@ -221,7 +233,7 @@ export default function StaffPortalPage() {
     .reduce((sum, b) => sum + (b.service_price || 0), 0)
   const dayActual = dayBookings
     .filter((b) => b.status === 'confirmed')
-    .reduce((sum, b) => sum + (b.amount_paid != null ? Number(b.amount_paid) : 0), 0)
+    .reduce((sum, b) => sum + (b.amount_paid != null ? Number(b.amount_paid) : (b.service_price || 0)), 0)
 
   const dayLabel = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -230,7 +242,7 @@ export default function StaffPortalPage() {
   return (
     <div className="tenant-app" style={{ ['--brand' as any]: brandColor }}>
       <div className="tenant-container">
-        {isOwnerToo && <Link href="/dashboard" className="back-link">← Back to dashboard</Link>}
+        {isOwnerToo && <Link href="/dashboard/staff" className="back-link">← Back to staff</Link>}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
           <div className="tenant-hero" style={{ textAlign: 'left', margin: 0 }}>
@@ -326,7 +338,7 @@ export default function StaffPortalPage() {
                           step="0.01"
                           value={amounts[b.id] ?? ''}
                           onChange={(e) => setAmounts({ ...amounts, [b.id]: e.target.value })}
-                          placeholder={b.service_price != null ? String(b.service_price) : '0.00'}
+                          placeholder="0.00"
                           style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
                         />
                         <button
@@ -339,7 +351,11 @@ export default function StaffPortalPage() {
                       </>
                     ) : (
                       <span style={{ fontSize: '0.9rem' }}>
-                        {b.amount_paid != null ? money(Number(b.amount_paid)) : '—'}
+                        {b.amount_paid != null
+                          ? money(Number(b.amount_paid))
+                          : b.service_price != null
+                          ? money(b.service_price)
+                          : '—'}
                       </span>
                     )}
                   </div>
