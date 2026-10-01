@@ -149,6 +149,12 @@ export async function createSubscriptionCheckoutSession({
       mode: 'subscription',
       customer: customerId,
       client_reference_id: tenantId,
+      // Managed Payments (Stripe as merchant of record) is on by default for
+      // new accounts and requires a tax code on every product — TrimBooking
+      // is its own merchant of record here (same as the existing
+      // send_invoice flow, which never touched Stripe Tax either), so this
+      // opts back out rather than taxonomizing a product tax code.
+      managed_payments: { enabled: false },
       line_items: [
         {
           price_data: {
