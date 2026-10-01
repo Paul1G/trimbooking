@@ -33,8 +33,15 @@ export async function POST(req: NextRequest) {
   // failing the whole page load.
   if (staff.stripe_account_id && process.env.STRIPE_SECRET_KEY) {
     try {
-      const account = await stripe.accounts.retrieve(staff.stripe_account_id)
-      const payoutsEnabled = !!account.payouts_enabled
+      // v2 Core Accounts API — configuration.recipient isn't returned unless
+      // explicitly requested via `include`. The recipient capability's own
+      // status ('active' once Stripe has fully enabled it) is this API's
+      // equivalent of v1's boolean `payouts_enabled`.
+      const account = await stripe.v2.core.accounts.retrieve(staff.stripe_account_id, {
+        include: ['configuration.recipient'],
+      })
+      const transferStatus = account.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers?.status
+      const payoutsEnabled = transferStatus === 'active'
       const status = payoutsEnabled ? 'connected' : 'pending'
       if (status !== staff.stripe_connect_status || payoutsEnabled !== staff.stripe_payouts_enabled) {
         await supabaseAdmin

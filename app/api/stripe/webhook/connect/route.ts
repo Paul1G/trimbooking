@@ -30,14 +30,29 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'account.updated') {
+    // This classic event is a backwards-compatibility snapshot Stripe still
+    // emits for accounts created via the newer v2 Core Accounts API (what
+    // connect-start/route.ts uses) — but its exact field shape for a v2
+    // account isn't something to rely on. Instead, treat this event only as
+    // "something changed, go check" and fetch the authoritative v2 status
+    // directly, the same way connect-status/route.ts does.
     const account = event.data.object as Stripe.Account
-    const payoutsEnabled = !!account.payouts_enabled
-    const status = payoutsEnabled ? 'connected' : 'pending'
+    try {
+      const v2Account = await stripe.v2.core.accounts.retrieve(account.id, {
+        include: ['configuration.recipient'],
+      })
+      const transferStatus = v2Account.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers?.status
+      const payoutsEnabled = transferStatus === 'active'
+      const status = payoutsEnabled ? 'connected' : 'pending'
 
-    await supabaseAdmin
-      .from('staff')
-      .update({ stripe_connect_status: status, stripe_payouts_enabled: payoutsEnabled })
-      .eq('stripe_account_id', account.id)
+      await supabaseAdmin
+        .from('staff')
+        .update({ stripe_connect_status: status, stripe_payouts_enabled: payoutsEnabled })
+        .eq('stripe_account_id', account.id)
+    } catch {
+      // Best-effort — connect-status/route.ts covers the common case of the
+      // staff member coming back to check their own status anyway.
+    }
   }
 
   return NextResponse.json({ received: true })

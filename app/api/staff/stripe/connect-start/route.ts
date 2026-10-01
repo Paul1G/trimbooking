@@ -41,14 +41,29 @@ export async function POST(req: NextRequest) {
 
   try {
     if (!accountId) {
-      const account = await stripe.accounts.create({
-        type: 'express',
-        country: 'GB',
-        email: staff.email || undefined,
-        capabilities: {
-          transfers: { requested: true },
+      // v2 Core Accounts API (not the older v1 Express accounts) — this
+      // platform's Stripe account only allows v2 account creation for new
+      // integrations. A "recipient" configuration with the stripe_transfers
+      // capability is the v2 equivalent of a v1 Express account with the
+      // `transfers` capability: it lets this account receive payouts without
+      // ever taking card payments itself. dashboard: 'none' matches the
+      // v1 setup too — staff use TrimBooking's own portal, not a Stripe login.
+      const account = await stripe.v2.core.accounts.create({
+        contact_email: staff.email || undefined,
+        dashboard: 'none',
+        identity: {
+          country: 'GB',
+          entity_type: 'individual',
         },
-        business_type: 'individual',
+        configuration: {
+          recipient: {
+            capabilities: {
+              stripe_balance: {
+                stripe_transfers: { requested: true },
+              },
+            },
+          },
+        },
         metadata: {
           staff_id: staff.id,
           tenant_id: tenantId,
@@ -63,11 +78,17 @@ export async function POST(req: NextRequest) {
     }
 
     const base = `https://${subdomain}.trimbooking.co.uk/staff`
-    const accountLink = await stripe.accountLinks.create({
+    // v2 Account Links nest the URLs under use_case.account_onboarding,
+    // unlike the flat refresh_url/return_url on the old v1 AccountLinks API.
+    const accountLink = await stripe.v2.core.accountLinks.create({
       account: accountId,
-      refresh_url: `${base}?stripe=refresh`,
-      return_url: `${base}?stripe=return`,
-      type: 'account_onboarding',
+      use_case: {
+        type: 'account_onboarding',
+        account_onboarding: {
+          refresh_url: `${base}?stripe=refresh`,
+          return_url: `${base}?stripe=return`,
+        },
+      },
     })
 
     return NextResponse.json({ url: accountLink.url })
