@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import CustomerHistoryView from '../../CustomerHistoryView'
 import '../../tenant.css'
 
 type Booking = {
@@ -434,7 +435,13 @@ export default function BookingsPage() {
                 {selected.status}
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <CustomerHistoryView
+                tenantId={tenantId}
+                customerEmail={selected.customer_email}
+                excludeBookingId={selected.id}
+              />
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
                 {selected.status === 'pending' && (
                   <>
                     <button

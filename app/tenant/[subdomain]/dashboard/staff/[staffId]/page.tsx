@@ -5,11 +5,14 @@ import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { toDateStr } from '@/lib/availability'
+import CustomerHistoryView from '../../../CustomerHistoryView'
 import '../../../tenant.css'
 
 type Booking = {
   id: string
   customer_name: string
+  customer_email: string | null
+  customer_phone: string | null
   start_time: string
   end_time: string
   status: string
@@ -61,6 +64,8 @@ export default function StaffCalendarPage() {
   const [weekBookings, setWeekBookings] = useState<Booking[]>([])
   const [loadingWeek, setLoadingWeek] = useState(false)
   const [weekError, setWeekError] = useState('')
+
+  const [selected, setSelected] = useState<Booking | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -191,7 +196,7 @@ export default function StaffCalendarPage() {
     const colors = statusColors(b.status)
     const time = new Date(b.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     return (
-      <div key={b.id} className="card" style={{ cursor: 'default', flexWrap: 'wrap' }}>
+      <div key={b.id} onClick={() => setSelected(b)} className="card" style={{ cursor: 'pointer', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 200px' }}>
           <div className="card-title">{time} · {b.customer_name}</div>
           <div className="card-sub">{b.service_name}</div>
@@ -340,6 +345,55 @@ export default function StaffCalendarPage() {
               )
             })}
           </>
+        )}
+
+        {selected && (
+          <div
+            onClick={() => setSelected(null)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: '#fff', borderRadius: 14, padding: '1.5rem', width: 340, maxWidth: '90vw' }}
+            >
+              <h3 style={{ marginTop: 0 }}>{selected.customer_name}</h3>
+              <p className="card-sub" style={{ marginTop: 0 }}>{selected.service_name}</p>
+              <p className="card-sub">
+                {new Date(selected.start_time).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+              </p>
+              {selected.customer_phone && <p className="card-sub">{selected.customer_phone}</p>}
+              {selected.customer_email && <p className="card-sub">{selected.customer_email}</p>}
+
+              <div
+                style={{
+                  display: 'inline-block', fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
+                  textTransform: 'capitalize', margin: '0.5rem 0 0',
+                  background: statusColors(selected.status).bg,
+                  color: statusColors(selected.status).color,
+                }}
+              >
+                {selected.status}
+              </div>
+
+              <CustomerHistoryView
+                tenantId={tenantId}
+                customerEmail={selected.customer_email}
+                excludeBookingId={selected.id}
+              />
+
+              <div style={{ marginTop: '1.25rem' }}>
+                <button
+                  onClick={() => setSelected(null)}
+                  style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
