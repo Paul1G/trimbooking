@@ -76,14 +76,14 @@ export default function HowItWorksPage() {
       <header className="home-hero">
         <h1>How TrimBooking works</h1>
         <p>
-          TrimBooking gives your hairdressing salon, beauty salon or barbers its own online booking page,
-          a dashboard to manage every appointment, and portals for both customers
-          and staff. Here&apos;s what happens on each side.
+          TrimBooking gives your hairdressing salon, beauty salon, barbers or dog grooming
+          business its own online booking page, a dashboard to manage every appointment,
+          and portals for both customers and staff. Here&apos;s what happens on each side.
         </p>
       </header>
 
       <section className="home-section">
-        <div className="home-eyebrow">For salon &amp; barbershop owners</div>
+        <div className="home-eyebrow">For salon, barbershop &amp; grooming business owners</div>
         <h2 className="home-section-title">Set up once, run every day from one place</h2>
         <div className="steps-list">
           <div className="step">

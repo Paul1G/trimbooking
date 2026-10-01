@@ -43,7 +43,7 @@ export default function AboutPage() {
             TrimBooking is designed, built and maintained by one developer,
             rather than a large team or company. The goal is a booking system
             that&apos;s simple, fast and genuinely useful for independent
-            hairdressers, beauty salons and barbers — without the bloat, upsells or confusing
+            hairdressers, beauty salons, barbers and dog groomers — without the bloat, upsells or confusing
             settings that come with a lot of bigger booking platforms.
           </p>
           <p>

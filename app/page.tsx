@@ -85,7 +85,8 @@ export default function Home() {
         <h1>Online booking, built for hairdressers, beauty salons &amp; barbers</h1>
         <p>
           Give your business its own branded booking page. Customers book online in
-          seconds, and you manage every appointment from one simple dashboard.
+          seconds, and you manage every appointment from one simple dashboard. Just
+          as at home for a dog groomer&apos;s as it is for a hair salon or barbershop.
         </p>
         <div className="home-hero-actions">
           <Link href="/signup" className="btn-dark">Get started free</Link>
@@ -100,7 +101,7 @@ export default function Home() {
 
       <section className="home-section home-section-soft">
         <div className="home-eyebrow">Everything included</div>
-        <h2 className="home-section-title">Built for how your salon or barbers run</h2>
+        <h2 className="home-section-title">Built for how your salon, barbers or grooming business runs</h2>
         <div className="feature-grid">
           {features.map((f) => (
             <div key={f.title} className="feature-card">
