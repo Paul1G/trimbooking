@@ -64,6 +64,24 @@ export async function POST(req: NextRequest) {
             },
           },
         },
+        // Required as soon as a recipient requests stripe_transfers: Stripe
+        // won't hold the loss liability for an account this platform is
+        // actively pushing payouts to (losses_collector: 'stripe' is
+        // rejected with "capability_not_available_for_loss_collector" here),
+        // so the platform is responsible for negative balances instead — and
+        // Stripe requires fees_collector to match ('application') whenever
+        // losses_collector is 'application'. This is the same pairing a v1
+        // Express/Custom account gets when created via controller properties
+        // directly (as opposed to the legacy `type=express`/`type=custom`
+        // shortcut, which would have produced 'application_express'/
+        // 'application_custom' instead — those aren't valid values to set
+        // directly on creation).
+        defaults: {
+          responsibilities: {
+            fees_collector: 'application',
+            losses_collector: 'application',
+          },
+        },
         metadata: {
           staff_id: staff.id,
           tenant_id: tenantId,
