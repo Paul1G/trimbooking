@@ -393,8 +393,11 @@ export default function AdminPage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-start' }}>
-                  <span className="admin-badge" style={invoiceStatusStyle(inv.status)}>
-                    {inv.status}
+                  <span
+                    className={inv.status === 'paid' ? 'admin-badge admin-badge-paid' : 'admin-badge'}
+                    style={invoiceStatusStyle(inv.status)}
+                  >
+                    {inv.status === 'paid' ? '✓ Paid' : inv.status}
                   </span>
                   <span style={{ fontWeight: 700 }}>{money(inv.amount_pence)}</span>
                   {inv.stripe_hosted_invoice_url && (
@@ -467,8 +470,11 @@ export default function AdminPage() {
                 >
                   {t.disabled ? 'Disabled' : 'Active'}
                 </span>
-                <span className="admin-badge" style={trialLabel(t)}>
-                  {trialLabel(t).text}
+                <span
+                  className={t.paid ? 'admin-badge admin-badge-paid' : 'admin-badge'}
+                  style={trialLabel(t)}
+                >
+                  {t.paid ? '✓ Paid' : trialLabel(t).text}
                 </span>
               </div>
 
