@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { stripe } from '@/lib/stripe'
+import type Stripe from 'stripe'
 
 // Starts (or resumes) Stripe Connect onboarding for the SIGNED-IN staff
 // member, for their own account only — a staff member can only ever onboard
@@ -98,14 +99,19 @@ export async function POST(req: NextRequest) {
     const base = `https://${subdomain}.trimbooking.co.uk/staff`
     // v2 Account Links nest the URLs under use_case.account_onboarding,
     // unlike the flat refresh_url/return_url on the old v1 AccountLinks API.
+    // `configurations` (which account configuration — recipient, merchant,
+    // customer — this link is onboarding) is REQUIRED by the live API
+    // ("configs_must_match_to_use_account_links" if omitted), but isn't yet
+    // in this installed SDK version's TypeScript types, hence the cast.
     const accountLink = await stripe.v2.core.accountLinks.create({
       account: accountId,
       use_case: {
         type: 'account_onboarding',
         account_onboarding: {
+          configurations: ['recipient'],
           refresh_url: `${base}?stripe=refresh`,
           return_url: `${base}?stripe=return`,
-        },
+        } as Stripe.V2.Core.AccountLinkCreateParams.UseCase.AccountOnboarding,
       },
     })
 
