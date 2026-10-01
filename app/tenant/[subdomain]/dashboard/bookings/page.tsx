@@ -16,12 +16,17 @@ type Booking = {
   end_time: string
   status: string
   manage_token: string | null
+  amount_paid: number | null
   staff_id: string | null
   staff: { name: string } | null
-  services: { name: string } | null
+  services: { name: string; price: number | null } | null
 }
 
 type StaffMember = { id: string; name: string }
+
+function money(n: number): string {
+  return `£${n.toFixed(2)}`
+}
 
 const DAY_START_HOUR = 8
 const DAY_END_HOUR = 20
@@ -57,6 +62,9 @@ export default function BookingsPage() {
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [selected, setSelected] = useState<Booking | null>(null)
+  const [amountInput, setAmountInput] = useState('')
+  const [savingAmount, setSavingAmount] = useState(false)
+  const [amountError, setAmountError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -98,7 +106,7 @@ export default function BookingsPage() {
   async function loadBookings(tid: string) {
     const { data } = await supabase
       .from('bookings')
-      .select('id, customer_name, customer_phone, customer_email, start_time, end_time, status, manage_token, staff_id, staff:staff_id(name), services:service_id(name)')
+      .select('id, customer_name, customer_phone, customer_email, start_time, end_time, status, manage_token, amount_paid, staff_id, staff:staff_id(name), services:service_id(name, price)')
       .eq('tenant_id', tid)
       .order('start_time', { ascending: true })
     setBookings((data as any) || [])
@@ -142,6 +150,40 @@ export default function BookingsPage() {
 
     setSelected(null)
     await loadBookings(tenantId)
+  }
+
+  function selectBooking(b: Booking) {
+    setSelected(b)
+    setAmountInput(b.amount_paid != null ? String(b.amount_paid) : '')
+    setAmountError('')
+  }
+
+  async function saveAmount() {
+    if (!tenantId || !selected) return
+    const raw = amountInput.trim()
+    const value = raw === '' ? null : Number(raw)
+    if (value !== null && (Number.isNaN(value) || value < 0)) {
+      setAmountError('Please enter a valid amount.')
+      return
+    }
+
+    setSavingAmount(true)
+    setAmountError('')
+    const { error } = await supabase
+      .from('bookings')
+      .update({ amount_paid: value })
+      .eq('id', selected.id)
+      .eq('tenant_id', tenantId)
+    setSavingAmount(false)
+
+    if (error) {
+      setAmountError(error.message)
+      return
+    }
+
+    const updated = { ...selected, amount_paid: value }
+    setSelected(updated)
+    setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
   }
 
   if (checking) {
@@ -321,7 +363,7 @@ export default function BookingsPage() {
                         return (
                           <div
                             key={b.id}
-                            onClick={() => setSelected(b)}
+                            onClick={() => selectBooking(b)}
                             title={`${b.customer_name} — ${b.services?.name}`}
                             style={{
                               position: 'absolute',
@@ -380,7 +422,7 @@ export default function BookingsPage() {
 
             <div className="card-list">
               {listVisible.map((booking) => (
-                <div key={booking.id} onClick={() => setSelected(booking)} className="card">
+                <div key={booking.id} onClick={() => selectBooking(booking)} className="card">
                   <div>
                     <div className="card-title">{booking.customer_name}</div>
                     <div className="card-sub">{booking.services?.name} with {booking.staff?.name}</div>
@@ -433,6 +475,39 @@ export default function BookingsPage() {
                 }}
               >
                 {selected.status}
+              </div>
+
+              <div style={{ paddingTop: '0.25rem', borderTop: '1px solid #eee' }}>
+                {selected.services?.price != null && (
+                  <p className="card-sub" style={{ margin: '0.75rem 0 0.5rem' }}>
+                    Treatment cost: <strong>{money(selected.services.price)}</strong>
+                  </p>
+                )}
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', display: 'block', marginBottom: '0.3rem' }}>
+                  Amount paid
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>£</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={amountInput}
+                    onChange={(e) => setAmountInput(e.target.value)}
+                    placeholder="0.00"
+                    style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+                  />
+                  <button
+                    onClick={saveAmount}
+                    disabled={savingAmount}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                  >
+                    {savingAmount ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+                {amountError && (
+                  <p style={{ color: '#991b1b', fontSize: '0.82rem', margin: '0.5rem 0 0' }}>{amountError}</p>
+                )}
               </div>
 
               <CustomerHistoryView

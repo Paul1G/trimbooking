@@ -17,6 +17,12 @@ type Booking = {
   end_time: string
   status: string
   service_name: string | null
+  service_price: number | null
+  amount_paid: number | null
+}
+
+function money(n: number): string {
+  return `£${n.toFixed(2)}`
 }
 
 function statusColors(status: string) {
@@ -36,13 +42,15 @@ function startOfWeek(d: Date): Date {
   return date
 }
 
-// This page shows the OWNER a staff member's booking schedule only — who's
-// booked in, when, for what, and its status. It deliberately does not show
-// or edit expected/actual payment amounts: earnings are only ever visible
-// to the staff member themselves, via their own portal
-// (staff_get_my_bookings / staff_update_my_payment). Reads here go through
-// owner_get_staff_schedule (SECURITY DEFINER, no price/amount columns),
-// which checks server-side that the caller owns this tenant.
+// This page shows the OWNER a staff member's booking schedule — who's
+// booked in, when, for what, its status, and (per booking, when they open
+// it) the treatment's price and what's been paid so far, which the owner
+// can amend directly. It deliberately does NOT show any earnings summary —
+// no today's/month's expected vs. actual totals, no running revenue — those
+// stay visible only to the staff member themselves, from their own portal
+// (staff_get_my_bookings / staff_update_my_payment). Reads go through
+// owner_get_staff_schedule and writes through owner_update_staff_payment
+// (both SECURITY DEFINER, checked server-side against tenant ownership).
 export default function StaffCalendarPage() {
   const router = useRouter()
   const params = useParams()
@@ -66,6 +74,9 @@ export default function StaffCalendarPage() {
   const [weekError, setWeekError] = useState('')
 
   const [selected, setSelected] = useState<Booking | null>(null)
+  const [amountInput, setAmountInput] = useState('')
+  const [savingAmount, setSavingAmount] = useState(false)
+  const [amountError, setAmountError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -168,6 +179,41 @@ export default function StaffCalendarPage() {
     setWeekStart(d)
   }
 
+  function selectBooking(b: Booking) {
+    setSelected(b)
+    setAmountInput(b.amount_paid != null ? String(b.amount_paid) : '')
+    setAmountError('')
+  }
+
+  async function saveAmount() {
+    if (!tenantId || !selected) return
+    const raw = amountInput.trim()
+    const value = raw === '' ? null : Number(raw)
+    if (value !== null && (Number.isNaN(value) || value < 0)) {
+      setAmountError('Please enter a valid amount.')
+      return
+    }
+
+    setSavingAmount(true)
+    setAmountError('')
+    const { error } = await supabase.rpc('owner_update_staff_payment', {
+      p_tenant_id: tenantId,
+      p_booking_id: selected.id,
+      p_amount: value,
+    })
+    setSavingAmount(false)
+
+    if (error) {
+      setAmountError(error.message)
+      return
+    }
+
+    const updated = { ...selected, amount_paid: value }
+    setSelected(updated)
+    setDayBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+    setWeekBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+  }
+
   if (checking) {
     return (
       <div className="tenant-app">
@@ -196,7 +242,7 @@ export default function StaffCalendarPage() {
     const colors = statusColors(b.status)
     const time = new Date(b.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     return (
-      <div key={b.id} onClick={() => setSelected(b)} className="card" style={{ cursor: 'pointer', flexWrap: 'wrap' }}>
+      <div key={b.id} onClick={() => selectBooking(b)} className="card" style={{ cursor: 'pointer', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 200px' }}>
           <div className="card-title">{time} · {b.customer_name}</div>
           <div className="card-sub">{b.service_name}</div>
@@ -220,7 +266,7 @@ export default function StaffCalendarPage() {
 
         <div className="tenant-hero" style={{ textAlign: 'left', marginTop: '1rem' }}>
           <h1>{staffName}&apos;s calendar</h1>
-          <p>Their booking schedule. Earnings are only visible to {staffName} themselves, from their own portal.</p>
+          <p>Their booking schedule. Click an appointment to see its price and record what was paid — running totals and earnings stay in {staffName}&apos;s own portal.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
@@ -376,6 +422,39 @@ export default function StaffCalendarPage() {
                 }}
               >
                 {selected.status}
+              </div>
+
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                {selected.service_price != null && (
+                  <p className="card-sub" style={{ margin: '0 0 0.5rem' }}>
+                    Treatment cost: <strong>{money(selected.service_price)}</strong>
+                  </p>
+                )}
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', display: 'block', marginBottom: '0.3rem' }}>
+                  Amount paid
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>£</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={amountInput}
+                    onChange={(e) => setAmountInput(e.target.value)}
+                    placeholder="0.00"
+                    style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+                  />
+                  <button
+                    onClick={saveAmount}
+                    disabled={savingAmount}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                  >
+                    {savingAmount ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+                {amountError && (
+                  <p style={{ color: '#991b1b', fontSize: '0.82rem', margin: '0.5rem 0 0' }}>{amountError}</p>
+                )}
               </div>
 
               <CustomerHistoryView
