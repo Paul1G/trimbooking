@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (!session?.url) {
-    return NextResponse.json({ error: 'Could not start checkout.' }, { status: 500 })
+    return NextResponse.json({ error: session?.error ? `Could not start checkout: ${session.error}` : 'Could not start checkout.' }, { status: 500 })
   }
 
   return NextResponse.json({ url: session.url })

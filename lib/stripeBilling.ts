@@ -140,7 +140,7 @@ export async function createSubscriptionCheckoutSession({
   staffCount: number
   successUrl: string
   cancelUrl: string
-}): Promise<{ url: string | null } | null> {
+}): Promise<{ url: string | null; error?: string } | null> {
   if (!process.env.STRIPE_SECRET_KEY) return null
 
   try {
@@ -164,8 +164,13 @@ export async function createSubscriptionCheckoutSession({
       cancel_url: cancelUrl,
     })
     return { url: session.url }
-  } catch {
-    return null
+  } catch (err: any) {
+    // Logged server-side (visible in Vercel's function logs) and also handed
+    // back to the route below, since this is a small, single-owner site —
+    // worth knowing exactly what Stripe rejected rather than a flat
+    // "something went wrong".
+    console.error('createSubscriptionCheckoutSession failed:', err?.message || err)
+    return { url: null, error: err?.message || 'Unknown Stripe error' }
   }
 }
 
