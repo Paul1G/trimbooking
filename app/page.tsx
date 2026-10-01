@@ -77,7 +77,7 @@ export default function Home() {
             About
           </Link>
           <Link href="/login" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
-            Log in
+            Staff login
           </Link>
           <Link href="/signup" className="nav-cta">Get started</Link>
         </div>

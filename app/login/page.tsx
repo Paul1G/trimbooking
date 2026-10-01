@@ -62,10 +62,12 @@ export default function LoginRedirectPage() {
 
       <div className="signup-wrap">
         <div className="home-hero" style={{ padding: 0, marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '1.8rem' }}>Log in to your shop</h1>
+          <h1 style={{ fontSize: '1.8rem' }}>Staff &amp; owner login</h1>
           <p>
-            Every TrimBooking business has its own login page. Enter your
-            shop&apos;s name or web address below and we&apos;ll take you there.
+            This is for shop owners and staff only — customers don&apos;t need
+            an account to book an appointment. Every TrimBooking business has
+            its own login page; enter your shop&apos;s name or web address
+            below and we&apos;ll take you there.
           </p>
         </div>
 
