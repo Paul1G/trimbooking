@@ -184,6 +184,15 @@ export default function GuidePage() {
             expired), and you can remove a staff member&apos;s access entirely by
             deleting them from the Staff page.
           </p>
+          <h3>Getting paid directly (Stripe)</h3>
+          <p>
+            From their own portal, a staff member can click <strong>Set up
+            payouts</strong> to connect a Stripe account in their own name.
+            This doesn&apos;t change how customers pay today — that&apos;s still in
+            person — it just gets that staff member ready to be paid out
+            directly as more payment features arrive, rather than always
+            settling up with you separately.
+          </p>
         </section>
 
         <section id="bookings" className="doc-section">

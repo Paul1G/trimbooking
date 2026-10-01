@@ -79,6 +79,10 @@ export default function StaffPortalPage() {
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState('')
 
+  const [connectStatus, setConnectStatus] = useState<'not_connected' | 'pending' | 'connected' | null>(null)
+  const [connectLoading, setConnectLoading] = useState(false)
+  const [connectError, setConnectError] = useState('')
+
   useEffect(() => {
     async function load() {
       const { data: sessionData } = await supabase.auth.getSession()
@@ -122,6 +126,55 @@ export default function StaffPortalPage() {
     }
     load()
   }, [params.subdomain, router])
+
+  useEffect(() => {
+    if (!tenantId) return
+    refreshConnectStatus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId])
+
+  async function refreshConnectStatus() {
+    if (!tenantId) return
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
+    try {
+      const res = await fetch('/api/staff/stripe/connect-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        body: JSON.stringify({ tenantId }),
+      })
+      const json = await res.json()
+      if (res.ok) setConnectStatus(json.status)
+    } catch {
+      // Payouts status is a nice-to-have on page load; a network blip here
+      // shouldn't block the rest of the portal.
+    }
+  }
+
+  async function startConnect() {
+    if (!tenantId) return
+    setConnectLoading(true)
+    setConnectError('')
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
+    try {
+      const res = await fetch('/api/staff/stripe/connect-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        body: JSON.stringify({ tenantId, subdomain: params.subdomain }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setConnectError(json.error || 'Could not start payout setup.')
+        setConnectLoading(false)
+        return
+      }
+      window.location.href = json.url
+    } catch {
+      setConnectError('Could not start payout setup.')
+      setConnectLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!tenantId) return
@@ -373,6 +426,31 @@ export default function StaffPortalPage() {
               Expected: {monthLoading ? '...' : money(monthExpected)}
             </div>
           </div>
+        </div>
+
+        <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <div style={{ fontWeight: 600 }}>Get paid directly</div>
+          {connectStatus === 'connected' ? (
+            <p className="card-sub" style={{ margin: 0, color: '#166534' }}>
+              ✅ Payouts are set up — Stripe can pay you directly.
+            </p>
+          ) : (
+            <>
+              <p className="card-sub" style={{ margin: 0 }}>
+                {connectStatus === 'pending'
+                  ? 'You started setting this up but haven’t finished — pick up where you left off.'
+                  : 'Connect your bank details with Stripe so you can be paid out directly, instead of settling up with your employer separately.'}
+              </p>
+              <button
+                onClick={startConnect}
+                disabled={connectLoading}
+                style={{ alignSelf: 'flex-start', padding: '6px 14px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                {connectLoading ? 'Opening Stripe...' : connectStatus === 'pending' ? 'Finish setting up payouts' : 'Set up payouts'}
+              </button>
+              {connectError && <p style={{ color: '#991b1b', fontSize: '0.85rem', margin: 0 }}>{connectError}</p>}
+            </>
+          )}
         </div>
 
         <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', marginBottom: '1.5rem' }}>
