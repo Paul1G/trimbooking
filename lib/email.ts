@@ -235,6 +235,7 @@ export async function sendInvoiceEmail({
   staffCount,
   amountPence,
   isProration,
+  payLink,
 }: {
   ownerEmail: string
   shopName: string
@@ -244,6 +245,10 @@ export async function sendInvoiceEmail({
   staffCount: number
   amountPence: number
   isProration: boolean
+  // A Stripe-hosted invoice payment page, when platform billing is
+  // configured (lib/stripeBilling.ts) — lets the owner pay by card right
+  // from this email instead of "payment instructions will follow separately".
+  payLink?: string | null
 }) {
   if (!ownerEmail) return { error: 'Missing owner email' }
 
@@ -275,7 +280,13 @@ export async function sendInvoiceEmail({
           ? `<p>This covers the rest of this month from your sign-up date. From next month you'll be invoiced on the 1st, in advance, for the full month ahead.</p>`
           : `<p>This covers the month ahead, based on your current number of staff.</p>`
       }
-      <p>Payment instructions will follow separately — no need to do anything yet. If you have any questions in the meantime, just reply to this email or reach us at
+      ${
+        payLink
+          ? `<p style="margin: 1.5rem 0;"><a href="${payLink}" style="background:#111;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Pay this invoice</a></p>
+             <p style="font-size:0.9rem;color:#555;">Paid securely by card via Stripe — we never see or store your card details.</p>`
+          : `<p>Payment instructions will follow separately — no need to do anything yet.</p>`
+      }
+      <p>If you have any questions in the meantime, just reply to this email or reach us at
       <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a>.</p>
     `,
   })

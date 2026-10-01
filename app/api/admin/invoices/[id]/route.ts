@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { requireAdmin } from '@/lib/adminAuth'
 import { sendInvoiceEmail } from '@/lib/email'
+import { getOrCreateStripeCustomer, createStripeInvoice } from '@/lib/stripeBilling'
 
 // Marks an invoice paid/pending/void, or resends its invoice email — the
 // only two actions the admin panel needs since invoices are otherwise
@@ -34,6 +35,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Could not find an email address for this shop\'s owner.' }, { status: 400 })
     }
 
+    // Reuse the existing Stripe invoice's pay link if this one already has
+    // one; otherwise try to raise one now (covers invoices created before
+    // Stripe was configured, or a transient failure the first time around).
+    let payLink: string | null = invoice.stripe_hosted_invoice_url || null
+    if (!payLink) {
+      const customerId = await getOrCreateStripeCustomer(tenant.id, tenant.name, ownerEmail)
+      if (customerId) {
+        const stripeInvoice = await createStripeInvoice({
+          customerId,
+          amountPence: invoice.amount_pence,
+          description: `TrimBooking — ${tenant.name} (${invoice.period_start} to ${invoice.period_end})`,
+        })
+        if (stripeInvoice) {
+          payLink = stripeInvoice.hostedInvoiceUrl
+          await supabaseAdmin
+            .from('invoices')
+            .update({
+              stripe_invoice_id: stripeInvoice.id,
+              stripe_hosted_invoice_url: stripeInvoice.hostedInvoiceUrl,
+              stripe_status: stripeInvoice.status,
+            })
+            .eq('id', id)
+        }
+      }
+    }
+
     const result = await sendInvoiceEmail({
       ownerEmail,
       shopName: tenant.name,
@@ -43,6 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       staffCount: invoice.staff_count,
       amountPence: invoice.amount_pence,
       isProration: invoice.is_proration,
+      payLink,
     })
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 })

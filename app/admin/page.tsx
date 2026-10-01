@@ -14,6 +14,7 @@ type Tenant = {
   disabled: boolean
   paid: boolean
   trial_ends_at: string | null
+  stripe_customer_id: string | null
 }
 
 type Invoice = {
@@ -28,6 +29,9 @@ type Invoice = {
   sent_at: string | null
   paid_at: string | null
   created_at: string
+  stripe_invoice_id: string | null
+  stripe_hosted_invoice_url: string | null
+  stripe_status: string | null
   tenants: { name: string; subdomain: string } | null
 }
 
@@ -365,6 +369,16 @@ export default function AdminPage() {
                     {inv.status}
                   </span>
                   <span style={{ fontWeight: 700 }}>{money(inv.amount_pence)}</span>
+                  {inv.stripe_hosted_invoice_url && (
+                    <a
+                      href={inv.stripe_hosted_invoice_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: '0.8rem', color: 'var(--muted)' }}
+                    >
+                      View payment page ↗
+                    </a>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -401,6 +415,18 @@ export default function AdminPage() {
                 <div className="admin-shop-name">{t.name}</div>
                 <div className="admin-shop-sub">{t.subdomain}.trimbooking.co.uk</div>
                 <div className="admin-shop-sub">{t.owner_email || 'no owner account'}</div>
+                {t.stripe_customer_id && (
+                  <div className="admin-shop-sub">
+                    <a
+                      href={`https://dashboard.stripe.com/customers/${t.stripe_customer_id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: 'inherit' }}
+                    >
+                      Stripe customer ↗
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-start' }}>

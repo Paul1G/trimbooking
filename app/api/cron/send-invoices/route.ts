@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { sendInvoiceEmail } from '@/lib/email'
 import { fullMonthInvoice, startOfNextMonth } from '@/lib/billing'
+import { getOrCreateStripeCustomer, createStripeInvoice } from '@/lib/stripeBilling'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +61,30 @@ export async function GET(req: NextRequest) {
       const { data: userData } = await supabaseAdmin.auth.admin.getUserById(tenant.owner_id)
       const ownerEmail = userData.user?.email
       if (ownerEmail) {
+        // Raise a real, payable Stripe invoice when platform billing is
+        // configured — falls back to no pay link (old behaviour) if Stripe
+        // isn't set up or the call fails, same as the signup invoice above.
+        let payLink: string | null = null
+        const customerId = await getOrCreateStripeCustomer(tenant.id, tenant.name, ownerEmail)
+        if (customerId) {
+          const stripeInvoice = await createStripeInvoice({
+            customerId,
+            amountPence: invoice.amountPence,
+            description: `TrimBooking — ${tenant.name} (${invoice.periodStart} to ${invoice.periodEnd})`,
+          })
+          if (stripeInvoice && invoiceRow?.id) {
+            payLink = stripeInvoice.hostedInvoiceUrl
+            await supabaseAdmin
+              .from('invoices')
+              .update({
+                stripe_invoice_id: stripeInvoice.id,
+                stripe_hosted_invoice_url: stripeInvoice.hostedInvoiceUrl,
+                stripe_status: stripeInvoice.status,
+              })
+              .eq('id', invoiceRow.id)
+          }
+        }
+
         const result = await sendInvoiceEmail({
           ownerEmail,
           shopName: tenant.name,
@@ -69,6 +94,7 @@ export async function GET(req: NextRequest) {
           staffCount: invoice.staffCount,
           amountPence: invoice.amountPence,
           isProration: false,
+          payLink,
         })
         emailed = !result.error
         if (emailed && invoiceRow?.id) {

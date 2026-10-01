@@ -29,11 +29,16 @@ The owner can see a staff member's booking schedule (who's booked in, when, stat
 
 No customer-facing online payment exists yet — customers always pay the business in person, and that isn't changing. What's being built in stages on top of that:
 
-1. **Staff Stripe Connect onboarding** (done) — each staff member can link a Stripe Express account from `/staff` (`app/api/staff/stripe/connect-start`, `connect-status`, and the `/api/stripe/webhook` Connect webhook keep `staff.stripe_connect_status`/`stripe_payouts_enabled` in sync). No money moves yet — this just gets accounts ready to receive payouts.
-2. **Platform billing via Stripe** (not started) — replacing the current manual monthly invoice email + admin-toggles-`paid` flow (`lib/billing.ts`, `app/api/cron/send-invoices`) with real Stripe subscriptions, automated charging and a payments view on `/admin`.
+1. **Staff Stripe Connect onboarding** (done) — each staff member can link a Stripe Express account from `/staff` (`app/api/staff/stripe/connect-start`, `connect-status`, and the `/api/stripe/webhook/connect` webhook keep `staff.stripe_connect_status`/`stripe_payouts_enabled` in sync). No money moves yet — this just gets accounts ready to receive payouts.
+2. **Platform billing via Stripe** (done) — the signup proration invoice, the monthly cron (`app/api/cron/send-invoices`) and the admin "Resend" action (`lib/stripeBilling.ts`) each raise a real, finalized Stripe Invoice per billing period (a `Customer` per tenant, `collection_method: 'send_invoice'` so no card is ever stored by TrimBooking) and put its Stripe-hosted pay link in TrimBooking's own invoice email. `/api/stripe/webhook/billing` keeps `invoices.status`/`stripe_status` in sync when Stripe reports a payment. Nothing here touches `tenants.paid` — that stays a separate, manually-controlled "is billing switched on for this shop" flag, not "was the last invoice paid". The admin panel (`/admin`) shows each tenant's linked Stripe customer and each invoice's Stripe payment-page link.
 3. **No-show payment handling** (not started) — an optional per-tenant setting to save a customer's card (no charge) as a no-show guard, a "charge no-show fee" action for staff, and a manual no-show/fee-owed log for everyone else — feeding the Stage 1 Connect accounts for payout.
 
-Requires `STRIPE_SECRET_KEY` and (for the webhook) `STRIPE_CONNECT_WEBHOOK_SECRET` in the environment, and Stripe Connect enabled on the platform's Stripe account.
+Requires `STRIPE_SECRET_KEY` in the environment, plus two separate webhook endpoints/secrets in the Stripe dashboard (these are deliberately separate — Stripe treats "your account" and "connected accounts" as different event streams):
+
+- `/api/stripe/webhook/connect` — events on connected (staff payout) accounts → `STRIPE_CONNECT_WEBHOOK_SECRET`
+- `/api/stripe/webhook/billing` — events on the platform account (invoices) → `STRIPE_WEBHOOK_SECRET`
+
+Stripe Connect must also be enabled on the platform's Stripe account for Stage 1 to work. All of the above runs happily without any of these set — platform billing just falls back to its old behaviour (an invoice record + email with no pay link yet).
 
 ## Getting started
 

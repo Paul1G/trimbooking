@@ -3,11 +3,16 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
 
-// Stripe Connect webhook. Point a webhook endpoint at
-// https://trimbooking.co.uk/api/stripe/webhook (Connect events) and set
+// Stripe Connect webhook — events on CONNECTED accounts (staff payout
+// accounts), not the platform account itself. In the Stripe dashboard,
+// create a webhook destination listening to "events on Connected accounts"
+// pointed at https://trimbooking.co.uk/api/stripe/webhook/connect, and set
 // STRIPE_CONNECT_WEBHOOK_SECRET to its signing secret. This keeps a staff
 // member's connect status accurate even if they close the tab mid-onboarding
-// (the status-check route above covers the common case of them coming back).
+// (connect-status/route.ts covers the common case of them coming back).
+//
+// This is separate from /api/stripe/webhook/billing, which listens to events
+// on the platform account itself (e.g. an invoice being paid).
 export async function POST(req: NextRequest) {
   const signature = req.headers.get('stripe-signature')
   const webhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET
