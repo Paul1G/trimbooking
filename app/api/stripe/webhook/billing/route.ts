@@ -10,10 +10,12 @@ import Stripe from 'stripe'
 // at https://trimbooking.co.uk/api/stripe/webhook/billing, and set
 // STRIPE_WEBHOOK_SECRET to its signing secret.
 //
-// This only keeps our own `invoices` row's stripe_status/paid_at in sync —
-// it deliberately does NOT touch tenants.paid, which is a separate,
-// manually-controlled "is billing turned on for this shop" flag, not "was
-// the last invoice paid".
+// Keeps our own `invoices` row's stripe_status/paid_at in sync, and — when
+// an invoice is actually paid — also switches that tenant to `paid: true`.
+// This is what takes a trial shop live automatically the moment its owner
+// pays the trial-ending invoice (see app/api/cron/send-trial-invoices),
+// with no admin step required; it's a harmless no-op for a tenant that's
+// already paid (e.g. a later regular monthly invoice).
 export async function POST(req: NextRequest) {
   const signature = req.headers.get('stripe-signature')
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -42,7 +44,16 @@ export async function POST(req: NextRequest) {
         update.status = 'void'
       }
 
-      await supabaseAdmin.from('invoices').update(update).eq('stripe_invoice_id', stripeInvoice.id)
+      const { data: updatedInvoice } = await supabaseAdmin
+        .from('invoices')
+        .update(update)
+        .eq('stripe_invoice_id', stripeInvoice.id)
+        .select('tenant_id')
+        .maybeSingle()
+
+      if (event.type === 'invoice.paid' && updatedInvoice?.tenant_id) {
+        await supabaseAdmin.from('tenants').update({ paid: true }).eq('id', updatedInvoice.tenant_id)
+      }
     }
   }
 

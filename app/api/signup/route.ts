@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { slugifySubdomain, validateSubdomain } from '@/lib/subdomain'
-import { sendWelcomeEmail, sendInvoiceEmail } from '@/lib/email'
-import { getOrCreateStripeCustomer, createStripeInvoice } from '@/lib/stripeBilling'
+import { sendWelcomeEmail } from '@/lib/email'
 import { addDomainToVercelProject } from '@/lib/vercel'
-import { prorateSignupInvoice, startOfNextMonth } from '@/lib/billing'
+import { startOfNextMonth } from '@/lib/billing'
 
 // Sensible defaults for a brand new shop — open Mon–Sat, closed Sunday.
 // Keys match lib/availability.ts's dayKeyFor() (sun, mon, tue, wed, thu, fri, sat).
@@ -91,8 +90,8 @@ export async function POST(req: NextRequest) {
       font_family: 'system',
       opening_hours: DEFAULT_OPENING_HOURS,
       trial_ends_at: trialEndsAt,
-      // Regular monthly invoices start from the 1st of next month — the
-      // prorated invoice raised below covers the gap between now and then.
+      // A gate for the monthly billing cron, not tied to anything charged
+      // yet — it only ever fires once this tenant is also marked `paid`.
       next_invoice_at: startOfNextMonth(now).toISOString(),
     })
     .select('id')
@@ -129,70 +128,10 @@ export async function POST(req: NextRequest) {
     })
   })
 
-  // Raise and email the prorated first invoice, covering sign-up day through
-  // the end of this calendar month. A brand new shop has no staff yet, so
-  // this is just the base fee pro-rated — never blocks signup if it fails.
-  if (tenantRow?.id) {
-    const proration = prorateSignupInvoice(now, 0)
-    const { data: invoiceRow } = await supabaseAdmin
-      .from('invoices')
-      .insert({
-        tenant_id: tenantRow.id,
-        period_start: proration.periodStart,
-        period_end: proration.periodEnd,
-        staff_count: proration.staffCount,
-        amount_pence: proration.amountPence,
-        is_proration: true,
-      })
-      .select('id')
-      .maybeSingle()
-
-    // Raise a real, payable Stripe invoice alongside our own record, when
-    // platform billing is configured — this never blocks or delays signup
-    // itself, and silently falls back to the old "no pay link yet" email if
-    // Stripe isn't set up or the call fails for any reason.
-    after(async () => {
-      try {
-        let payLink: string | null = null
-        const customerId = await getOrCreateStripeCustomer(tenantRow.id, shopName, email)
-        if (customerId) {
-          const stripeInvoice = await createStripeInvoice({
-            customerId,
-            amountPence: proration.amountPence,
-            description: `TrimBooking — ${shopName} (${proration.periodStart} to ${proration.periodEnd}, part month)`,
-          })
-          if (stripeInvoice && invoiceRow?.id) {
-            payLink = stripeInvoice.hostedInvoiceUrl
-            await supabaseAdmin
-              .from('invoices')
-              .update({
-                stripe_invoice_id: stripeInvoice.id,
-                stripe_hosted_invoice_url: stripeInvoice.hostedInvoiceUrl,
-                stripe_status: stripeInvoice.status,
-              })
-              .eq('id', invoiceRow.id)
-          }
-        }
-
-        const result = await sendInvoiceEmail({
-          ownerEmail: email,
-          shopName,
-          subdomain,
-          periodStart: proration.periodStart,
-          periodEnd: proration.periodEnd,
-          staffCount: proration.staffCount,
-          amountPence: proration.amountPence,
-          isProration: true,
-          payLink,
-        })
-        if (!result.error && invoiceRow?.id) {
-          await supabaseAdmin.from('invoices').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', invoiceRow.id)
-        }
-      } catch {
-        // Provisioning already succeeded; a failed invoice step shouldn't block signup.
-      }
-    })
-  }
+  // No invoice is raised here — the shop is free for the full 30-day trial.
+  // The first invoice goes out automatically ~7 days before trial_ends_at
+  // (see app/api/cron/send-trial-invoices), or whenever this tenant is
+  // marked "paid" in /admin, whichever comes first.
 
   return NextResponse.json({ subdomain })
 }

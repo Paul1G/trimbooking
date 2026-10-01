@@ -17,6 +17,10 @@
       "schedule": "0 7 1 * *"
     },
     {
+      "path": "/api/cron/send-trial-invoices",
+      "schedule": "15 7 * * *"
+    },
+    {
       "path": "/api/cron/send-rebook-nudges",
       "schedule": "0 9 * * *"
     }

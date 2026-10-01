@@ -236,6 +236,7 @@ export async function sendInvoiceEmail({
   amountPence,
   isProration,
   payLink,
+  trialEndsAt,
 }: {
   ownerEmail: string
   shopName: string
@@ -249,6 +250,11 @@ export async function sendInvoiceEmail({
   // configured (lib/stripeBilling.ts) — lets the owner pay by card right
   // from this email instead of "payment instructions will follow separately".
   payLink?: string | null
+  // Set only for the one-off invoice raised ~7 days before a free trial
+  // ends (see app/api/cron/send-trial-invoices) — swaps in copy explaining
+  // this is what keeps the shop running past the trial, rather than the
+  // "first, part-month bill sent at signup" framing isProration alone implies.
+  trialEndsAt?: string | null
 }) {
   if (!ownerEmail) return { error: 'Missing owner email' }
 
@@ -259,7 +265,9 @@ export async function sendInvoiceEmail({
       ? `${staffCount} staff members (includes 4, plus ${staffCount - 4} extra at £2.50/month each)`
       : `${staffCount} staff member${staffCount === 1 ? '' : 's'} (included in the base fee)`
 
-  const subject = isProration
+  const subject = trialEndsAt
+    ? `Your free trial ends soon — ${shopName}'s first TrimBooking invoice`
+    : isProration
     ? `Your TrimBooking invoice — ${shopName} (first, part-month bill)`
     : `Your TrimBooking invoice for ${new Date(periodStart).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} — ${shopName}`
 
@@ -269,14 +277,20 @@ export async function sendInvoiceEmail({
     subject,
     html: `
       <p>Hi there,</p>
-      <p>Here's your ${isProration ? 'first' : 'latest'} invoice for <strong>${shopName}</strong> (${subdomain}.trimbooking.co.uk):</p>
+      ${
+        trialEndsAt
+          ? `<p>Your 30-day free trial for <strong>${shopName}</strong> (${subdomain}.trimbooking.co.uk) ends on <strong>${formatDateLong(trialEndsAt)}</strong>. Here's your first invoice, covering from then to the end of the month, so your shop keeps running without a gap:</p>`
+          : `<p>Here's your ${isProration ? 'first' : 'latest'} invoice for <strong>${shopName}</strong> (${subdomain}.trimbooking.co.uk):</p>`
+      }
       <table cellpadding="0" cellspacing="0" style="margin: 1rem 0; font-size: 0.95rem;">
         <tr><td style="padding: 2px 12px 2px 0; color: #555;">Billing period</td><td><strong>${periodLine}</strong></td></tr>
         <tr><td style="padding: 2px 12px 2px 0; color: #555;">Staff</td><td>${staffLine}</td></tr>
         <tr><td style="padding: 2px 12px 2px 0; color: #555;">Amount due</td><td><strong>${amount}</strong></td></tr>
       </table>
       ${
-        isProration
+        trialEndsAt
+          ? `<p>Paying this before your trial ends keeps ${shopName} live with no interruption. From next month you'll be invoiced on the 1st, in advance, for the full month ahead.</p>`
+          : isProration
           ? `<p>This covers the rest of this month from your sign-up date. From next month you'll be invoiced on the 1st, in advance, for the full month ahead.</p>`
           : `<p>This covers the month ahead, based on your current number of staff.</p>`
       }
