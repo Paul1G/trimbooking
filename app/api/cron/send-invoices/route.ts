@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { sendInvoiceEmail } from '@/lib/email'
-import { fullMonthInvoice, startOfNextMonth } from '@/lib/billing'
-import { getOrCreateStripeCustomer, createStripeInvoice } from '@/lib/stripeBilling'
+import { startOfNextMonth } from '@/lib/billing'
+import { invoiceTenantForMonth } from '@/lib/billingCron'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,75 +35,7 @@ export async function GET(req: NextRequest) {
   const results: { subdomain: string; staffCount: number; amountPence: number; emailed: boolean }[] = []
 
   for (const tenant of tenants || []) {
-    const { count: staffCount } = await supabaseAdmin
-      .from('staff')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', tenant.id)
-
-    const invoice = fullMonthInvoice(now, staffCount || 0)
-
-    const { data: invoiceRow } = await supabaseAdmin
-      .from('invoices')
-      .insert({
-        tenant_id: tenant.id,
-        period_start: invoice.periodStart,
-        period_end: invoice.periodEnd,
-        staff_count: invoice.staffCount,
-        amount_pence: invoice.amountPence,
-        is_proration: false,
-      })
-      .select('id')
-      .maybeSingle()
-
-    let emailed = false
-    if (tenant.owner_id) {
-      const { data: userData } = await supabaseAdmin.auth.admin.getUserById(tenant.owner_id)
-      const ownerEmail = userData.user?.email
-      if (ownerEmail) {
-        // Raise a real, payable Stripe invoice when platform billing is
-        // configured — falls back to no pay link (old behaviour) if Stripe
-        // isn't set up or the call fails, same as the signup invoice above.
-        let payLink: string | null = null
-        const customerId = await getOrCreateStripeCustomer(tenant.id, tenant.name, ownerEmail)
-        if (customerId) {
-          const stripeInvoice = await createStripeInvoice({
-            customerId,
-            amountPence: invoice.amountPence,
-            description: `TrimBooking — ${tenant.name} (${invoice.periodStart} to ${invoice.periodEnd})`,
-          })
-          if (stripeInvoice && invoiceRow?.id) {
-            payLink = stripeInvoice.hostedInvoiceUrl
-            await supabaseAdmin
-              .from('invoices')
-              .update({
-                stripe_invoice_id: stripeInvoice.id,
-                stripe_hosted_invoice_url: stripeInvoice.hostedInvoiceUrl,
-                stripe_status: stripeInvoice.status,
-              })
-              .eq('id', invoiceRow.id)
-          }
-        }
-
-        const result = await sendInvoiceEmail({
-          ownerEmail,
-          shopName: tenant.name,
-          subdomain: tenant.subdomain,
-          periodStart: invoice.periodStart,
-          periodEnd: invoice.periodEnd,
-          staffCount: invoice.staffCount,
-          amountPence: invoice.amountPence,
-          isProration: false,
-          payLink,
-        })
-        emailed = !result.error
-        if (emailed && invoiceRow?.id) {
-          await supabaseAdmin
-            .from('invoices')
-            .update({ status: 'sent', sent_at: new Date().toISOString() })
-            .eq('id', invoiceRow.id)
-        }
-      }
-    }
+    const outcome = await invoiceTenantForMonth(tenant, now)
 
     // Move this tenant's next invoice on to the month after, regardless of
     // whether the email sent — the invoice row itself is what admin sees as
@@ -115,7 +46,7 @@ export async function GET(req: NextRequest) {
       .update({ next_invoice_at: startOfNextMonth(now).toISOString() })
       .eq('id', tenant.id)
 
-    results.push({ subdomain: tenant.subdomain, staffCount: invoice.staffCount, amountPence: invoice.amountPence, emailed })
+    results.push({ subdomain: tenant.subdomain, ...outcome })
   }
 
   return NextResponse.json({ ranAt: now.toISOString(), invoiced: results })

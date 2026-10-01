@@ -69,6 +69,7 @@ export default function AdminPage() {
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [actionError, setActionError] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [resetSent, setResetSent] = useState(false)
   const [tab, setTab] = useState<'shops' | 'invoices'>('shops')
@@ -247,6 +248,32 @@ export default function AdminPage() {
     setBusyId(null)
   }
 
+  async function invoiceNow(t: Tenant) {
+    const confirmed = window.confirm(
+      `Raise and email a real, full-month invoice for "${t.name}" right now? This creates a real Stripe invoice if billing is configured.`
+    )
+    if (!confirmed) return
+
+    setBusyId(t.id)
+    setActionError('')
+    setActionMessage('')
+    const res = await authedFetch(`/api/admin/tenants/${t.id}/invoice-now`, { method: 'POST' })
+    const result = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setActionError(result.error || 'Could not raise this invoice.')
+      setBusyId(null)
+      return
+    }
+    setActionMessage(
+      result.emailed
+        ? `Invoiced ${t.name}: £${(result.amountPence / 100).toFixed(2)} for ${result.staffCount} staff — email sent.`
+        : `Invoice raised for ${t.name}, but the email didn't send — check the owner has a valid account.`
+    )
+    await loadTenants()
+    if (invoicesLoaded) await loadInvoices()
+    setBusyId(null)
+  }
+
   async function deleteTenant(t: Tenant) {
     const confirmed = window.confirm(
       `Permanently delete "${t.name}" (${t.subdomain}.trimbooking.co.uk)? This deletes all its bookings, staff and services, and cannot be undone.`
@@ -350,6 +377,7 @@ export default function AdminPage() {
         </div>
 
         {actionError && <p style={{ color: '#dc2626' }}>{actionError}</p>}
+        {actionMessage && <p style={{ color: '#16a34a' }}>{actionMessage}</p>}
 
         {tab === 'invoices' && (
           <div className="admin-shop-list">
@@ -452,6 +480,9 @@ export default function AdminPage() {
                 )}
                 <button className="admin-btn" onClick={() => togglePaid(t)} disabled={busyId === t.id}>
                   {t.paid ? 'Mark as unpaid' : 'Mark as paid'}
+                </button>
+                <button className="admin-btn" onClick={() => invoiceNow(t)} disabled={busyId === t.id}>
+                  Invoice now
                 </button>
                 <button className="admin-btn" onClick={() => toggleDisabled(t)} disabled={busyId === t.id}>
                   {t.disabled ? 'Enable' : 'Disable'}
