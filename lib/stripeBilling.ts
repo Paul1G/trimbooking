@@ -72,6 +72,10 @@ export async function createStripeInvoice({
       collection_method: 'send_invoice',
       days_until_due: 14,
       auto_advance: true,
+      // Without this, Stripe defaults to 'exclude' — creating an EMPTY draft
+      // invoice regardless of the item just created above, which finalizes
+      // and can be paid at £0.00 with the real amount never collected.
+      pending_invoice_items_behavior: 'include',
     })
 
     if (!invoice.id) return null
