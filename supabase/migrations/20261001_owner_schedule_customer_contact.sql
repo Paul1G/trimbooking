@@ -8,8 +8,16 @@
 -- email/phone elsewhere (e.g. the main Bookings page).
 --
 -- Run this in the Supabase SQL editor.
+--
+-- Postgres won't let `create or replace function` change a function's
+-- return columns (even just adding two) — it refuses with "cannot change
+-- return type of existing function". The old 4-column version has to be
+-- dropped first; the create right after puts the 8-column version back
+-- immediately, so there's no real gap in availability.
 
-create or replace function owner_get_staff_schedule(
+drop function if exists owner_get_staff_schedule(uuid, uuid, timestamptz, timestamptz);
+
+create function owner_get_staff_schedule(
   p_tenant_id uuid,
   p_staff_id uuid,
   p_range_start timestamptz,
