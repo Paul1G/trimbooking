@@ -56,7 +56,7 @@ export async function createStripeInvoice({
   customerId: string
   amountPence: number
   description: string
-}): Promise<{ id: string; hostedInvoiceUrl: string | null; status: string | null } | null> {
+}): Promise<{ id: string; hostedInvoiceUrl: string | null; status: string | null; dueDate: string | null } | null> {
   if (!process.env.STRIPE_SECRET_KEY) return null
 
   try {
@@ -85,6 +85,9 @@ export async function createStripeInvoice({
       id: finalized.id || invoice.id,
       hostedInvoiceUrl: finalized.hosted_invoice_url || null,
       status: finalized.status || null,
+      // due_date is a unix timestamp (seconds); stored as a plain date for
+      // the dunning cron (app/api/cron/billing-dunning) to compare against.
+      dueDate: finalized.due_date ? new Date(finalized.due_date * 1000).toISOString().slice(0, 10) : null,
     }
   } catch {
     return null

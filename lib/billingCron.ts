@@ -55,6 +55,7 @@ export async function invoiceTenantForMonth(tenant: {
               stripe_invoice_id: stripeInvoice.id,
               stripe_hosted_invoice_url: stripeInvoice.hostedInvoiceUrl,
               stripe_status: stripeInvoice.status,
+              due_date: stripeInvoice.dueDate,
             })
             .eq('id', invoiceRow.id)
         }

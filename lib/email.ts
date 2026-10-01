@@ -312,6 +312,101 @@ export async function sendInvoiceEmail({
   return { id: data?.id }
 }
 
+// Sent once a day during the 5-day grace period after a recurring invoice's
+// due date has passed and gone unpaid (see app/api/cron/billing-dunning).
+export async function sendPaymentReminderEmail({
+  ownerEmail,
+  shopName,
+  subdomain,
+  amountPence,
+  payLink,
+  daysOverdue,
+  graceDaysLeft,
+}: {
+  ownerEmail: string
+  shopName: string
+  subdomain: string
+  amountPence: number
+  payLink?: string | null
+  daysOverdue: number
+  graceDaysLeft: number
+}) {
+  if (!ownerEmail) return { error: 'Missing owner email' }
+
+  const amount = `£${(amountPence / 100).toFixed(2)}`
+
+  const { data, error } = await resend.emails.send({
+    from: 'TrimBooking <hello@trimbooking.co.uk>',
+    to: ownerEmail,
+    subject: `Payment overdue — ${shopName}'s TrimBooking invoice (${graceDaysLeft} day${graceDaysLeft === 1 ? '' : 's'} left)`,
+    html: `
+      <p>Hi there,</p>
+      <p>Your TrimBooking invoice for <strong>${shopName}</strong> (${subdomain}.trimbooking.co.uk) of <strong>${amount}</strong>
+      is now ${daysOverdue} day${daysOverdue === 1 ? '' : 's'} overdue.</p>
+      <p>You have <strong>${graceDaysLeft} day${graceDaysLeft === 1 ? '' : 's'}</strong> left to pay before
+      ${subdomain}.trimbooking.co.uk is automatically switched off.</p>
+      ${
+        payLink
+          ? `<p style="margin: 1.5rem 0;"><a href="${payLink}" style="background:#111;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Pay this invoice</a></p>
+             <p style="font-size:0.9rem;color:#555;">Paid securely by card via Stripe — we never see or store your card details.</p>`
+          : `<p>Get in touch at <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a> to settle this invoice.</p>`
+      }
+      <p>Questions? Just reply to this email or reach us at <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a>.</p>
+    `,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
+
+// Sent once, the moment the grace period runs out and the shop is switched
+// off for non-payment (distinct from sendTrialEndedEmail, which covers the
+// free trial simply running out with no invoice involved).
+export async function sendPaymentGraceExpiredEmail({
+  ownerEmail,
+  shopName,
+  subdomain,
+  amountPence,
+  payLink,
+}: {
+  ownerEmail: string
+  shopName: string
+  subdomain: string
+  amountPence: number
+  payLink?: string | null
+}) {
+  if (!ownerEmail) return { error: 'Missing owner email' }
+
+  const amount = `£${(amountPence / 100).toFixed(2)}`
+
+  const { data, error } = await resend.emails.send({
+    from: 'TrimBooking <hello@trimbooking.co.uk>',
+    to: ownerEmail,
+    subject: `Switched off for non-payment — ${shopName}`,
+    html: `
+      <p>Hi there,</p>
+      <p>Your outstanding invoice of <strong>${amount}</strong> for <strong>${shopName}</strong> went unpaid past its grace
+      period, so <strong>${subdomain}.trimbooking.co.uk</strong> has been switched off — customers won't be able to book,
+      and staff and owner logins are paused.</p>
+      ${
+        payLink
+          ? `<p style="margin: 1.5rem 0;"><a href="${payLink}" style="background:#111;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Pay this invoice to reactivate</a></p>
+             <p style="font-size:0.9rem;color:#555;">Your shop switches back on automatically as soon as this is paid.</p>`
+          : `<p>Get in touch at <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a> to settle this invoice and get your shop back on.</p>`
+      }
+    `,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
+
 export async function sendStaffPortalEmail({
   type,
   tenantName,

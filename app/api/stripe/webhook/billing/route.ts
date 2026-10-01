@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       if (event.type === 'invoice.paid' && updatedInvoice?.tenant_id) {
-        await supabaseAdmin.from('tenants').update({ paid: true }).eq('id', updatedInvoice.tenant_id)
+        // paid: true takes the tenant live (trial-ending invoice case); disabled: false
+        // reactivates one switched off by the dunning cron (app/api/cron/billing-dunning)
+        // for an overdue invoice — either way, paying any invoice puts the shop back live.
+        await supabaseAdmin.from('tenants').update({ paid: true, disabled: false }).eq('id', updatedInvoice.tenant_id)
       }
     }
   }

@@ -32,7 +32,14 @@ type Invoice = {
   stripe_invoice_id: string | null
   stripe_hosted_invoice_url: string | null
   stripe_status: string | null
+  due_date: string | null
   tenants: { name: string; subdomain: string } | null
+}
+
+function overdueDays(inv: Invoice): number | null {
+  if (inv.status !== 'sent' || !inv.due_date) return null
+  const days = Math.floor((Date.now() - new Date(inv.due_date).getTime()) / (24 * 60 * 60 * 1000))
+  return days > 0 ? days : null
 }
 
 function money(pence: number): string {
@@ -399,6 +406,11 @@ export default function AdminPage() {
                   >
                     {inv.status === 'paid' ? '✓ Paid' : inv.status}
                   </span>
+                  {overdueDays(inv) !== null && (
+                    <span className="admin-badge" style={{ background: '#fee2e2', color: '#991b1b' }}>
+                      {overdueDays(inv)} day{overdueDays(inv) === 1 ? '' : 's'} overdue
+                    </span>
+                  )}
                   <span style={{ fontWeight: 700 }}>{money(inv.amount_pence)}</span>
                   {inv.stripe_hosted_invoice_url && (
                     <a
