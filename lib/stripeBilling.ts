@@ -1,5 +1,6 @@
 import { stripe } from './stripe'
 import { supabaseAdmin } from './supabaseAdmin'
+import { monthlyAmountPence } from './billing'
 
 // Server-only helpers for Stage 2 (platform billing): giving each tenant a
 // Stripe Customer, and raising a real, payable Stripe Invoice for a billing
@@ -91,5 +92,113 @@ export async function createStripeInvoice({
     }
   } catch {
     return null
+  }
+}
+
+// --- Subscription billing (the owner's alternative to the above
+// invoice-per-period flow — a real Stripe Subscription, with a card on file,
+// that charges automatically each month) -----------------------------------
+
+// All subscription prices share one Stripe Product, created once and reused
+// (rather than one inline product per price) so the Stripe dashboard doesn't
+// accumulate a new product every time a tenant's staff count — and so their
+// monthly amount — changes. The price itself is still created fresh each
+// time (via price_data below) since the tiered, staff-count-based amount
+// isn't something Stripe's own per-seat pricing can express directly.
+let cachedSubscriptionProductId: string | null = null
+async function getSubscriptionProductId(): Promise<string> {
+  if (cachedSubscriptionProductId) return cachedSubscriptionProductId
+  if (process.env.STRIPE_SUBSCRIPTION_PRODUCT_ID) {
+    cachedSubscriptionProductId = process.env.STRIPE_SUBSCRIPTION_PRODUCT_ID
+    return cachedSubscriptionProductId
+  }
+  const existing = await stripe.products.list({ limit: 100 })
+  const found = existing.data.find((p) => p.name === 'TrimBooking Platform Subscription')
+  if (found) {
+    cachedSubscriptionProductId = found.id
+    return cachedSubscriptionProductId
+  }
+  const created = await stripe.products.create({ name: 'TrimBooking Platform Subscription' })
+  cachedSubscriptionProductId = created.id
+  return cachedSubscriptionProductId
+}
+
+// Starts a Stripe Checkout session (mode: 'subscription') so the owner can
+// add a card and go onto automatic monthly billing. client_reference_id
+// carries the tenant id through to the checkout.session.completed webhook
+// (app/api/stripe/webhook/billing), which is what actually flips
+// tenants.billing_method to 'subscription'.
+export async function createSubscriptionCheckoutSession({
+  customerId,
+  tenantId,
+  staffCount,
+  successUrl,
+  cancelUrl,
+}: {
+  customerId: string
+  tenantId: string
+  staffCount: number
+  successUrl: string
+  cancelUrl: string
+}): Promise<{ url: string | null } | null> {
+  if (!process.env.STRIPE_SECRET_KEY) return null
+
+  try {
+    const product = await getSubscriptionProductId()
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      client_reference_id: tenantId,
+      line_items: [
+        {
+          price_data: {
+            currency: 'gbp',
+            product,
+            unit_amount: monthlyAmountPence(staffCount),
+            recurring: { interval: 'month' },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+    })
+    return { url: session.url }
+  } catch {
+    return null
+  }
+}
+
+export async function cancelStripeSubscription(subscriptionId: string): Promise<boolean> {
+  if (!process.env.STRIPE_SECRET_KEY) return false
+  try {
+    await stripe.subscriptions.cancel(subscriptionId)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Keeps a subscription's monthly amount matching the tenant's current staff
+// count. proration_behavior: 'none' means a staff-count change doesn't
+// trigger a surprise top-up invoice mid-cycle — the new amount simply takes
+// effect from the next renewal, the same way the old invoice-per-period
+// model only ever reflects staff count as of when each invoice is raised.
+export async function syncSubscriptionPrice(subscriptionItemId: string, staffCount: number): Promise<boolean> {
+  if (!process.env.STRIPE_SECRET_KEY) return false
+  try {
+    const product = await getSubscriptionProductId()
+    await stripe.subscriptionItems.update(subscriptionItemId, {
+      price_data: {
+        currency: 'gbp',
+        product,
+        unit_amount: monthlyAmountPence(staffCount),
+        recurring: { interval: 'month' },
+      },
+      proration_behavior: 'none',
+    })
+    return true
+  } catch {
+    return false
   }
 }

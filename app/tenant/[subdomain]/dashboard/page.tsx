@@ -174,6 +174,12 @@ export default function DashboardPage() {
               <div className="card-sub">Set your logo and brand color</div>
             </div>
           </Link>
+          <Link href="/dashboard/billing" className="card">
+            <div>
+              <div className="card-title">Billing</div>
+              <div className="card-sub">Pay by invoice or switch to automatic monthly billing</div>
+            </div>
+          </Link>
         </div>
 
         <button

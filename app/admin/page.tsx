@@ -15,6 +15,7 @@ type Tenant = {
   paid: boolean
   trial_ends_at: string | null
   stripe_customer_id: string | null
+  billing_method: 'invoice' | 'subscription'
 }
 
 type Invoice = {
@@ -468,6 +469,11 @@ export default function AdminPage() {
                     >
                       Stripe customer ↗
                     </a>
+                  </div>
+                )}
+                {t.paid && (
+                  <div className="admin-shop-sub">
+                    {t.billing_method === 'subscription' ? 'Auto-billed (card on file)' : 'Pays by invoice'}
                   </div>
                 )}
               </div>
