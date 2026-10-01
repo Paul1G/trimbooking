@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { slugifySubdomain, validateSubdomain } from '@/lib/subdomain'
 import { sendWelcomeEmail, sendInvoiceEmail } from '@/lib/email'
@@ -117,8 +117,16 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  sendWelcomeEmail({ ownerEmail: email, shopName, subdomain }).catch(() => {
-    // Provisioning already succeeded; a failed welcome email shouldn't block signup.
+  // Both of these run via Next's after() rather than a bare fire-and-forget
+  // promise: on Vercel, the serverless function can be frozen the instant the
+  // response below is sent, which can kill an un-awaited async call (and even
+  // its .catch()) before it ever runs. after() tells the runtime to keep the
+  // function alive until these finish, so they reliably complete without
+  // making the signup request itself wait for them.
+  after(async () => {
+    await sendWelcomeEmail({ ownerEmail: email, shopName, subdomain }).catch(() => {
+      // Provisioning already succeeded; a failed welcome email shouldn't block signup.
+    })
   })
 
   // Raise and email the prorated first invoice, covering sign-up day through
@@ -143,44 +151,46 @@ export async function POST(req: NextRequest) {
     // platform billing is configured — this never blocks or delays signup
     // itself, and silently falls back to the old "no pay link yet" email if
     // Stripe isn't set up or the call fails for any reason.
-    ;(async () => {
-      let payLink: string | null = null
-      const customerId = await getOrCreateStripeCustomer(tenantRow.id, shopName, email)
-      if (customerId) {
-        const stripeInvoice = await createStripeInvoice({
-          customerId,
-          amountPence: proration.amountPence,
-          description: `TrimBooking — ${shopName} (${proration.periodStart} to ${proration.periodEnd}, part month)`,
-        })
-        if (stripeInvoice && invoiceRow?.id) {
-          payLink = stripeInvoice.hostedInvoiceUrl
-          await supabaseAdmin
-            .from('invoices')
-            .update({
-              stripe_invoice_id: stripeInvoice.id,
-              stripe_hosted_invoice_url: stripeInvoice.hostedInvoiceUrl,
-              stripe_status: stripeInvoice.status,
-            })
-            .eq('id', invoiceRow.id)
+    after(async () => {
+      try {
+        let payLink: string | null = null
+        const customerId = await getOrCreateStripeCustomer(tenantRow.id, shopName, email)
+        if (customerId) {
+          const stripeInvoice = await createStripeInvoice({
+            customerId,
+            amountPence: proration.amountPence,
+            description: `TrimBooking — ${shopName} (${proration.periodStart} to ${proration.periodEnd}, part month)`,
+          })
+          if (stripeInvoice && invoiceRow?.id) {
+            payLink = stripeInvoice.hostedInvoiceUrl
+            await supabaseAdmin
+              .from('invoices')
+              .update({
+                stripe_invoice_id: stripeInvoice.id,
+                stripe_hosted_invoice_url: stripeInvoice.hostedInvoiceUrl,
+                stripe_status: stripeInvoice.status,
+              })
+              .eq('id', invoiceRow.id)
+          }
         }
-      }
 
-      const result = await sendInvoiceEmail({
-        ownerEmail: email,
-        shopName,
-        subdomain,
-        periodStart: proration.periodStart,
-        periodEnd: proration.periodEnd,
-        staffCount: proration.staffCount,
-        amountPence: proration.amountPence,
-        isProration: true,
-        payLink,
-      })
-      if (!result.error && invoiceRow?.id) {
-        await supabaseAdmin.from('invoices').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', invoiceRow.id)
+        const result = await sendInvoiceEmail({
+          ownerEmail: email,
+          shopName,
+          subdomain,
+          periodStart: proration.periodStart,
+          periodEnd: proration.periodEnd,
+          staffCount: proration.staffCount,
+          amountPence: proration.amountPence,
+          isProration: true,
+          payLink,
+        })
+        if (!result.error && invoiceRow?.id) {
+          await supabaseAdmin.from('invoices').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', invoiceRow.id)
+        }
+      } catch {
+        // Provisioning already succeeded; a failed invoice step shouldn't block signup.
       }
-    })().catch(() => {
-      // Provisioning already succeeded; a failed invoice step shouldn't block signup.
     })
   }
 
