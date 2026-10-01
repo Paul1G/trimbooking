@@ -21,6 +21,12 @@ const features = [
       "Set each team member's working hours and breaks. TrimBooking only offers times that are actually free. View each person's day or a full week at a glance.",
   },
   {
+    icon: "🧾",
+    title: "Click a booking for the full picture",
+    description:
+      "Open any appointment on a calendar to see the treatment cost, record what was actually paid, and pull up that customer's history — their last few visits, how many times they've been in, and how long they've been a customer.",
+  },
+  {
     icon: "✅",
     title: "Accept or decline requests, or auto-confirm",
     description:
@@ -151,7 +157,7 @@ export default function HowItWorksPage() {
           <div className="feature-card">
             <div className="feature-icon">💷</div>
             <h3>See what they&apos;ve earned</h3>
-            <p>Every staff member can see their own day-by-day and month-to-date bookings and earnings — nobody else&apos;s, including you. As the owner, you see who&apos;s booked in and when, but earnings stay private to each staff member.</p>
+            <p>Every staff member can see their own day-by-day and month-to-date earnings totals — nobody else&apos;s, including you. As the owner, you can see and record the price and payment for any single booking, but those running totals stay private to each staff member.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon">⚙️</div>

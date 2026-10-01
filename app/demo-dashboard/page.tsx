@@ -14,14 +14,19 @@ type Booking = {
   service: string
   staff: string
   status: BookingStatus
+  price: number
+  amountPaid: number | null
 }
 
+type DemoVisit = { date: string; service: string }
+type DemoHistory = { totalVisits: number; customerSince: string; recentVisits: DemoVisit[] }
+
 const INITIAL_BOOKINGS: Booking[] = [
-  { id: '1', time: '9:00 AM', customer: 'Sophie Bennett', service: 'Cut & Blow Dry', staff: 'Maya Chen', status: 'confirmed' },
-  { id: '2', time: '10:30 AM', customer: 'Jordan Lee', service: 'Full Colour', staff: 'Ade Okafor', status: 'pending' },
-  { id: '3', time: '11:15 AM', customer: 'Priya Sharma', service: 'Lash Lift', staff: 'Maya Chen', status: 'pending' },
-  { id: '4', time: '1:00 PM', customer: 'Tom Whitfield', service: "Men's Cut", staff: 'Callum Reed', status: 'confirmed' },
-  { id: '5', time: '2:30 PM', customer: 'Freya Nilsen', service: 'Balayage', staff: 'Ade Okafor', status: 'pending' },
+  { id: '1', time: '9:00 AM', customer: 'Sophie Bennett', service: 'Cut & Blow Dry', staff: 'Maya Chen', status: 'confirmed', price: 45, amountPaid: 45 },
+  { id: '2', time: '10:30 AM', customer: 'Jordan Lee', service: 'Full Colour', staff: 'Ade Okafor', status: 'pending', price: 85, amountPaid: null },
+  { id: '3', time: '11:15 AM', customer: 'Priya Sharma', service: 'Lash Lift', staff: 'Maya Chen', status: 'pending', price: 35, amountPaid: null },
+  { id: '4', time: '1:00 PM', customer: 'Tom Whitfield', service: "Men's Cut", staff: 'Callum Reed', status: 'confirmed', price: 28, amountPaid: null },
+  { id: '5', time: '2:30 PM', customer: 'Freya Nilsen', service: 'Balayage', staff: 'Ade Okafor', status: 'pending', price: 120, amountPaid: null },
 ]
 
 const STAFF = [
@@ -30,18 +35,57 @@ const STAFF = [
   { name: 'Callum Reed', role: 'Barber' },
 ]
 
+// Sample customer history, just for this demo — on a real shop this comes
+// from that customer's own actual past visits.
+const DEMO_HISTORY: Record<string, DemoHistory> = {
+  '1': {
+    totalVisits: 6,
+    customerSince: '14 Feb 2025 (7 months)',
+    recentVisits: [
+      { date: '19 Aug 2026', service: 'Cut & Blow Dry' },
+      { date: '22 Jun 2026', service: 'Cut & Blow Dry' },
+      { date: '2 May 2026', service: 'Root Touch-Up' },
+    ],
+  },
+  '4': {
+    totalVisits: 2,
+    customerSince: '3 Jul 2026',
+    recentVisits: [{ date: '3 Jul 2026', service: "Men's Cut" }],
+  },
+}
+
 function statusColors(status: BookingStatus) {
   if (status === 'pending') return { bg: '#fef9c3', color: '#854d0e' }
   if (status === 'confirmed') return { bg: '#dcfce7', color: '#166534' }
   return { bg: '#fee2e2', color: '#991b1b' }
 }
 
+function money(n: number): string {
+  return `£${n.toFixed(2)}`
+}
+
 export default function DemoDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [amountInput, setAmountInput] = useState('')
 
   function setStatus(id: string, status: BookingStatus) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)))
   }
+
+  function selectBooking(b: Booking) {
+    setSelectedId(b.id)
+    setAmountInput(b.amountPaid != null ? String(b.amountPaid) : '')
+  }
+
+  function saveAmount() {
+    if (!selectedId) return
+    const value = amountInput.trim() === '' ? null : Number(amountInput)
+    setBookings((prev) => prev.map((b) => (b.id === selectedId ? { ...b, amountPaid: value } : b)))
+  }
+
+  const selected = bookings.find((b) => b.id === selectedId) || null
+  const selectedHistory = selectedId ? DEMO_HISTORY[selectedId] : undefined
 
   const confirmedToday = bookings.filter((b) => b.status === 'confirmed')
   const pendingCount = bookings.filter((b) => b.status === 'pending').length
@@ -123,13 +167,13 @@ export default function DemoDashboardPage() {
 
           <h3 className="section-title" style={{ marginTop: 0 }}>Today&apos;s bookings</h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
-            Try confirming or declining a request below — it&apos;s just for show.
+            Click a booking to see its price, log a payment and pull up the customer&apos;s history — or try confirming/declining a request. It&apos;s all just for show.
           </p>
           <div className="card-list">
             {bookings.map((b) => {
               const colors = statusColors(b.status)
               return (
-                <div key={b.id} className="card" style={{ cursor: 'default', flexWrap: 'wrap' }}>
+                <div key={b.id} onClick={() => selectBooking(b)} className="card" style={{ cursor: 'pointer', flexWrap: 'wrap' }}>
                   <div style={{ flex: '1 1 200px' }}>
                     <div className="card-title">{b.time} · {b.customer}</div>
                     <div className="card-sub">{b.service} with {b.staff}</div>
@@ -143,7 +187,7 @@ export default function DemoDashboardPage() {
                     {b.status}
                   </span>
                   {b.status === 'pending' && (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }} onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => setStatus(b.id, 'confirmed')}
                         style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
@@ -166,7 +210,7 @@ export default function DemoDashboardPage() {
           <h3 className="section-title">Your team</h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
             You see each person&apos;s booking schedule — click through for a day or
-            week view. Earnings stay private to each staff member, visible only
+            week view. Their running earnings totals stay private, visible only
             from their own portal.
           </p>
           <div className="card-list">
@@ -192,6 +236,94 @@ export default function DemoDashboardPage() {
           </div>
         </div>
       </div>
+
+      {selected && (
+        <div
+          onClick={() => setSelectedId(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: 14, padding: '1.5rem', width: 340, maxWidth: '90vw' }}
+          >
+            <h3 style={{ marginTop: 0 }}>{selected.customer}</h3>
+            <p className="card-sub" style={{ marginTop: 0 }}>{selected.service} with {selected.staff}</p>
+            <p className="card-sub">{selected.time} today</p>
+
+            <div
+              style={{
+                display: 'inline-block', fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
+                textTransform: 'capitalize', margin: '0.5rem 0 0',
+                background: statusColors(selected.status).bg, color: statusColors(selected.status).color,
+              }}
+            >
+              {selected.status}
+            </div>
+
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+              <p className="card-sub" style={{ margin: '0 0 0.5rem' }}>
+                Treatment cost: <strong>{money(selected.price)}</strong>
+              </p>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', display: 'block', marginBottom: '0.3rem' }}>
+                Amount paid
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>£</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={amountInput}
+                  onChange={(e) => setAmountInput(e.target.value)}
+                  placeholder="0.00"
+                  style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+                />
+                <button
+                  onClick={saveAmount}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', marginBottom: '0.5rem' }}>
+                Customer history
+              </div>
+              {selectedHistory ? (
+                <>
+                  <p style={{ fontSize: '0.85rem', margin: '0 0 0.6rem' }}>
+                    <strong>{selectedHistory.totalVisits}</strong> visits total · customer since {selectedHistory.customerSince}
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    {selectedHistory.recentVisits.map((v, i) => (
+                      <div key={i} style={{ fontSize: '0.82rem', display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                        <span style={{ color: '#444' }}>{v.service}</span>
+                        <span style={{ color: '#999', whiteSpace: 'nowrap' }}>{v.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize: '0.85rem', color: '#999', margin: 0 }}>No previous visits — this is their first time.</p>
+              )}
+            </div>
+
+            <div style={{ marginTop: '1.25rem' }}>
+              <button
+                onClick={() => setSelectedId(null)}
+                style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="home-footer">
         <div className="home-footer-links">

@@ -173,9 +173,11 @@ export default function GuidePage() {
           </p>
           <div className="doc-note">
             The owner dashboard shows each staff member&apos;s booking schedule
-            (who&apos;s booked in and when) but never their earnings — expected
-            or actual payment amounts are only ever visible to that staff
-            member themselves, from their own portal.
+            and lets you see and record the price and payment for any single
+            booking (see the next section) — but never their running
+            earnings totals. Today&apos;s and month-to-date figures (expected
+            vs. actual) are only ever visible to that staff member
+            themselves, from their own portal.
           </div>
           <p>
             You can resend an invite at any time (for example if the link
@@ -207,6 +209,21 @@ export default function GuidePage() {
             If you&apos;d rather a staff member&apos;s bookings didn&apos;t need your approval
             at all, turn on <strong>auto-confirm</strong> for them on the Staff page —
             their bookings are then accepted the moment a customer requests them.
+          </p>
+          <h3>Clicking a booking</h3>
+          <p>
+            Click any appointment on a calendar — the main Bookings calendar or
+            a staff member&apos;s own calendar — to open its details:
+          </p>
+          <ul>
+            <li><strong>Treatment cost</strong> — the price of the service booked.</li>
+            <li><strong>Amount paid</strong> — enter or correct what was actually taken for this appointment, for example if you took payment yourself.</li>
+            <li><strong>Customer history</strong> — their last few visits with dates and treatments, how many visits they&apos;ve had in total, and how long they&apos;ve been a customer.</li>
+          </ul>
+          <p>
+            This is all scoped to the one booking and customer you&apos;ve opened —
+            it&apos;s not a running earnings total, which stays on each staff
+            member&apos;s own portal as described above.
           </p>
         </section>
 
