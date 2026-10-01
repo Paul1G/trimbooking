@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { toDateStr } from '@/lib/availability'
+import { downloadCsv } from '@/lib/csv'
 import '../tenant.css'
 
 type MyData = {
@@ -37,6 +38,18 @@ function money(n: number): string {
   return `£${n.toFixed(2)}`
 }
 
+function monthStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1)
+}
+
+function endOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59)
+}
+
 export default function StaffPortalPage() {
   const router = useRouter()
   const params = useParams()
@@ -58,6 +71,13 @@ export default function StaffPortalPage() {
 
   const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
+
+  const [reportMode, setReportMode] = useState<'month' | 'range'>('month')
+  const [reportMonth, setReportMonth] = useState(() => monthStr(new Date()))
+  const [reportStart, setReportStart] = useState(() => toDateStr(startOfMonth(new Date())))
+  const [reportEnd, setReportEnd] = useState(() => toDateStr(new Date()))
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportError, setReportError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -209,6 +229,84 @@ export default function StaffPortalPage() {
     await loadMonth(selectedDate)
   }
 
+  async function downloadReport() {
+    if (!tenantId || !me) return
+    setReportError('')
+
+    let rangeStart: Date
+    let rangeEnd: Date
+    let labelForFilename: string
+
+    if (reportMode === 'month') {
+      if (!reportMonth) {
+        setReportError('Choose a month.')
+        return
+      }
+      const [y, m] = reportMonth.split('-').map(Number)
+      const monthDate = new Date(y, m - 1, 1)
+      rangeStart = startOfMonth(monthDate)
+      rangeEnd = endOfMonth(monthDate)
+      labelForFilename = reportMonth
+    } else {
+      if (!reportStart || !reportEnd) {
+        setReportError('Choose a start and end date.')
+        return
+      }
+      rangeStart = new Date(reportStart + 'T00:00:00')
+      rangeEnd = new Date(reportEnd + 'T23:59:59')
+      if (rangeStart > rangeEnd) {
+        setReportError('The start date must be before the end date.')
+        return
+      }
+      labelForFilename = `${reportStart}-to-${reportEnd}`
+    }
+
+    setReportLoading(true)
+    // Same staff_get_my_bookings call the rest of this page uses — it's a
+    // SECURITY DEFINER function that only ever returns the signed-in staff
+    // member's own bookings, so this report can't end up containing anyone
+    // else's data no matter what range is requested.
+    const { data, error } = await supabase.rpc('staff_get_my_bookings', {
+      p_tenant_id: tenantId,
+      p_start: rangeStart.toISOString(),
+      p_end: rangeEnd.toISOString(),
+    })
+    setReportLoading(false)
+
+    if (error) {
+      setReportError(error.message)
+      return
+    }
+
+    const rows = ((data as Booking[]) || []).slice().sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    )
+
+    const csvRows: string[][] = [
+      ['Date', 'Time', 'Customer', 'Service', 'Status', 'Expected (£)', 'Amount paid (£)'],
+    ]
+    for (const b of rows) {
+      const start = new Date(b.start_time)
+      const expected = b.service_price != null ? b.service_price.toFixed(2) : ''
+      const paid =
+        b.status === 'confirmed'
+          ? (b.amount_paid != null ? Number(b.amount_paid) : (b.service_price ?? 0)).toFixed(2)
+          : ''
+      csvRows.push([
+        start.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        b.customer_name,
+        b.service_name || '',
+        b.status,
+        expected,
+        paid,
+      ])
+    }
+
+    const safeName = me.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    downloadCsv(`earnings-${safeName}-${labelForFilename}.csv`, csvRows)
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -275,6 +373,79 @@ export default function StaffPortalPage() {
               Expected: {monthLoading ? '...' : money(monthExpected)}
             </div>
           </div>
+        </div>
+
+        <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <div style={{ fontWeight: 600 }}>Download your earnings report</div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => setReportMode('month')}
+              style={{
+                padding: '6px 14px', borderRadius: 8,
+                border: reportMode === 'month' ? '2px solid var(--brand)' : '1px solid #ddd',
+                background: reportMode === 'month' ? 'var(--brand)' : '#fff',
+                color: reportMode === 'month' ? '#fff' : '#000',
+                cursor: 'pointer', fontSize: '0.85rem',
+              }}
+            >
+              By month
+            </button>
+            <button
+              onClick={() => setReportMode('range')}
+              style={{
+                padding: '6px 14px', borderRadius: 8,
+                border: reportMode === 'range' ? '2px solid var(--brand)' : '1px solid #ddd',
+                background: reportMode === 'range' ? 'var(--brand)' : '#fff',
+                color: reportMode === 'range' ? '#fff' : '#000',
+                cursor: 'pointer', fontSize: '0.85rem',
+              }}
+            >
+              Custom range
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {reportMode === 'month' ? (
+              <input
+                type="month"
+                value={reportMonth}
+                onChange={(e) => setReportMonth(e.target.value)}
+                style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+              />
+            ) : (
+              <>
+                <input
+                  type="date"
+                  value={reportStart}
+                  onChange={(e) => setReportStart(e.target.value)}
+                  style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+                />
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>to</span>
+                <input
+                  type="date"
+                  value={reportEnd}
+                  onChange={(e) => setReportEnd(e.target.value)}
+                  style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+                />
+              </>
+            )}
+            <button
+              onClick={downloadReport}
+              disabled={reportLoading}
+              style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              {reportLoading ? 'Preparing...' : 'Download CSV'}
+            </button>
+          </div>
+
+          <p className="card-sub" style={{ margin: 0 }}>
+            Includes only your own bookings — date, service, status, expected price and amount paid.
+          </p>
+
+          {reportError && (
+            <p style={{ color: '#991b1b', fontSize: '0.85rem', margin: 0 }}>{reportError}</p>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
