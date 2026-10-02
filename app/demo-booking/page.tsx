@@ -261,24 +261,24 @@ export default function DemoBookingPage() {
                   fee may be charged — otherwise nothing is taken.
                 </p>
               </div>
-              <div className="field-group">
-                <label className="field-label">Card number</label>
-                <input className="field-input" placeholder="4242 4242 4242 4242" disabled={cardSaved} />
+              <div
+                style={{
+                  border: '1px dashed #ccc',
+                  borderRadius: 10,
+                  padding: '1.5rem',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  background: '#fafafa',
+                  marginBottom: '1rem',
+                }}
+              >
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>🔒</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Stripe&apos;s secure card form appears here</div>
+                <p style={{ fontSize: '0.8rem', margin: '0.4rem 0 0' }}>
+                  On a live shop, this step is Stripe&apos;s own payment form — no card details are ever
+                  entered into or seen by TrimBooking. This demo doesn&apos;t collect any card details at all.
+                </p>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <div className="field-group" style={{ flex: 1 }}>
-                  <label className="field-label">Expiry</label>
-                  <input className="field-input" placeholder="12 / 34" disabled={cardSaved} />
-                </div>
-                <div className="field-group" style={{ flex: 1 }}>
-                  <label className="field-label">CVC</label>
-                  <input className="field-input" placeholder="123" disabled={cardSaved} />
-                </div>
-              </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                This is a sample card form — it&apos;s not connected to a real payment processor, and no
-                card details are collected here. On a live shop, this step is a secure Stripe card form.
-              </p>
               <button className="btn-primary" onClick={() => { setCardSaved(true); setStep('done') }}>
                 Save card &amp; confirm booking
               </button>
