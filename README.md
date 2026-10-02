@@ -48,6 +48,8 @@ Stripe Connect must also be enabled on the platform's Stripe account for Stage 1
 
 Card data itself is never handled by TrimBooking's own code — see [SECURITY.md](./SECURITY.md) for how this keeps TrimBooking at the lightest PCI DSS tier (SAQ A), plus the account-security policy and incident response plan.
 
+TrimBooking's public [Terms of Service](https://trimbooking.co.uk/terms) and [Privacy Policy](https://trimbooking.co.uk/privacy) cover both businesses using the platform and their customers, and include the Stripe Connected Account Agreement disclosure Stripe requires of Connect platforms. They're drafted as a starting point and should be reviewed by a solicitor before being relied on — update the "Last updated" date on each page (`app/terms/page.tsx`, `app/privacy/page.tsx`) whenever their content changes.
+
 ## Getting started
 
 ```bash

@@ -352,7 +352,13 @@ export default function BookingForm({
 
         {error && <p className="error-text">{error}</p>}
 
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+          By confirming, you agree to TrimBooking&apos;s{' '}
+          <a href="https://trimbooking.co.uk/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>{' '}
+          and <a href="https://trimbooking.co.uk/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+        </p>
+
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
           <button className="btn-primary" onClick={handleReviewConfirm} disabled={submitting || startingCard}>
             {submitting || startingCard ? 'Booking...' : noShowProtectionEnabled ? 'Continue to add a card' : 'Confirm booking'}
           </button>

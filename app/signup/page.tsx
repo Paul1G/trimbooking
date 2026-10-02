@@ -294,6 +294,8 @@ export default function SignupPage() {
           <Link href="/pricing">Pricing</Link>
           <Link href="/guide">User guide</Link>
           <Link href="/about">About &amp; support</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
         </div>
         © {new Date().getFullYear()} TrimBooking
       </footer>

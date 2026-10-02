@@ -84,6 +84,8 @@ export default function AboutPage() {
           <Link href="/pricing">Pricing</Link>
           <Link href="/guide">User guide</Link>
           <Link href="/about">About &amp; support</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
           <Link href="/signup">Get started</Link>
         </div>
         © {new Date().getFullYear()} TrimBooking
