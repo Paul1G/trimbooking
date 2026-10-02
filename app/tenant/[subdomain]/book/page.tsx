@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import BookingForm from './BookingForm'
 import TenantNav from '../TenantNav'
 import { tenantBrandStyle, googleFontHref } from '@/lib/branding'
+import { computeNoShowFee } from '@/lib/noShow'
 import '../tenant.css'
 
 export const dynamic = 'force-dynamic'
@@ -47,6 +48,9 @@ export default async function BookPage({
 
   const fontHref = googleFontHref(tenant.font_family)
 
+  const noShowProtectionEnabled = !!tenant.no_show_protection_enabled
+  const noShowFeeAmount = noShowProtectionEnabled ? computeNoShowFee(tenant as any, service as any) : null
+
   return (
     <div className="tenant-app" style={tenantBrandStyle(tenant) as any}>
       {fontHref && <link rel="stylesheet" href={fontHref} />}
@@ -57,7 +61,17 @@ export default async function BookPage({
           <p>£{service.price} · {service.duration_minutes} min</p>
         </div>
 
-        <BookingForm tenantId={tenant.id} tenantName={tenant.name} subdomain={subdomain} service={service} staffList={staff || []} shopOpeningHours={tenant.opening_hours || {}} />
+        <BookingForm
+          tenantId={tenant.id}
+          tenantName={tenant.name}
+          subdomain={subdomain}
+          service={service}
+          staffList={staff || []}
+          shopOpeningHours={tenant.opening_hours || {}}
+          noShowProtectionEnabled={noShowProtectionEnabled}
+          noShowCardRequired={tenant.no_show_card_required !== false}
+          noShowFeeAmount={noShowFeeAmount}
+        />
       </div>
     </div>
   )

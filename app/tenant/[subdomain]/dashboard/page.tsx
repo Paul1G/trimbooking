@@ -180,6 +180,12 @@ export default function DashboardPage() {
               <div className="card-sub">Pay by invoice or switch to automatic monthly billing</div>
             </div>
           </Link>
+          <Link href="/dashboard/no-show-protection" className="card">
+            <div>
+              <div className="card-title">No-show protection</div>
+              <div className="card-sub">Save a card at booking time and charge a fee for no-shows</div>
+            </div>
+          </Link>
         </div>
 
         <button

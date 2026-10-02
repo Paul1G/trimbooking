@@ -11,6 +11,7 @@ type Service = {
   name: string
   duration_minutes: number
   price: number
+  no_show_fee: number | null
 }
 
 export default function ServicesPage() {
@@ -25,6 +26,8 @@ export default function ServicesPage() {
   const [name, setName] = useState('')
   const [duration, setDuration] = useState('')
   const [price, setPrice] = useState('')
+  const [noShowFee, setNoShowFee] = useState('')
+  const [noShowFeeMode, setNoShowFeeMode] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -49,6 +52,7 @@ export default function ServicesPage() {
 
       setTenantId(tenant.id)
       setBrandColor(tenant.brand_color)
+      setNoShowFeeMode(tenant.no_show_fee_mode || null)
       await loadServices(tenant.id)
       setChecking(false)
     }
@@ -69,6 +73,7 @@ export default function ServicesPage() {
     setName('')
     setDuration('')
     setPrice('')
+    setNoShowFee('')
     setError('')
   }
 
@@ -77,6 +82,7 @@ export default function ServicesPage() {
     setName(service.name)
     setDuration(String(service.duration_minutes))
     setPrice(String(service.price))
+    setNoShowFee(service.no_show_fee != null ? String(service.no_show_fee) : '')
     setError('')
   }
 
@@ -92,12 +98,15 @@ export default function ServicesPage() {
     }
     if (!tenantId) return
 
+    const noShowFeeValue = noShowFee === '' ? null : Number(noShowFee)
+
     if (editingId === 'new') {
       const { error: insertError } = await supabase.from('services').insert({
         tenant_id: tenantId,
         name,
         duration_minutes: Number(duration),
         price: Number(price),
+        no_show_fee: noShowFeeValue,
       })
       if (insertError) {
         setError(insertError.message)
@@ -110,6 +119,7 @@ export default function ServicesPage() {
           name,
           duration_minutes: Number(duration),
           price: Number(price),
+          no_show_fee: noShowFeeValue,
         })
         .eq('id', editingId)
         .eq('tenant_id', tenantId)
@@ -184,6 +194,13 @@ export default function ServicesPage() {
                   <input className="field-input" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
                 </div>
 
+                {noShowFeeMode === 'per_service' && (
+                  <div className="field-group">
+                    <label className="field-label">No-show fee (£, optional)</label>
+                    <input className="field-input" type="number" step="0.01" min={0} value={noShowFee} onChange={(e) => setNoShowFee(e.target.value)} />
+                  </div>
+                )}
+
                 {error && <p className="error-text">{error}</p>}
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -239,6 +256,13 @@ export default function ServicesPage() {
               <label className="field-label">Price (£)</label>
               <input className="field-input" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
             </div>
+
+            {noShowFeeMode === 'per_service' && (
+              <div className="field-group">
+                <label className="field-label">No-show fee (£, optional)</label>
+                <input className="field-input" type="number" step="0.01" min={0} value={noShowFee} onChange={(e) => setNoShowFee(e.target.value)} />
+              </div>
+            )}
 
             {error && <p className="error-text">{error}</p>}
 

@@ -1,8 +1,84 @@
 'use client'
 
 import { useState } from 'react'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { supabase } from '@/lib/supabase'
 import AvailabilityPicker, { WorkingHours, BreakWindows } from '../AvailabilityPicker'
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null
+
+// The card-collection step for no-show protection. Rendered inside
+// <Elements>, which is what useStripe()/useElements() need — kept as its own
+// component rather than inline since those hooks can't be called in the
+// component that creates the <Elements> provider itself.
+function NoShowCardStep({
+  cardRequired,
+  submitting,
+  onSaved,
+  onSkip,
+}: {
+  cardRequired: boolean
+  submitting: boolean
+  onSaved: (paymentMethodId: string) => void
+  onSkip: () => void
+}) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [confirming, setConfirming] = useState(false)
+  const [cardError, setCardError] = useState('')
+
+  async function handleConfirm() {
+    if (!stripe || !elements) return
+    setConfirming(true)
+    setCardError('')
+
+    const { error, setupIntent } = await stripe.confirmSetup({
+      elements,
+      redirect: 'if_required',
+    })
+
+    setConfirming(false)
+
+    if (error) {
+      setCardError(error.message || 'Could not save this card.')
+      return
+    }
+
+    const paymentMethodId =
+      typeof setupIntent?.payment_method === 'string' ? setupIntent.payment_method : setupIntent?.payment_method?.id
+
+    if (!paymentMethodId) {
+      setCardError('Could not save this card.')
+      return
+    }
+
+    onSaved(paymentMethodId)
+  }
+
+  return (
+    <div>
+      <PaymentElement />
+      {cardError && <p className="error-text">{cardError}</p>}
+      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+        <button className="btn-primary" onClick={handleConfirm} disabled={!stripe || confirming || submitting}>
+          {confirming || submitting ? 'Confirming...' : 'Save card & confirm booking'}
+        </button>
+        {!cardRequired && (
+          <button
+            onClick={onSkip}
+            disabled={confirming || submitting}
+            style={{ padding: '0.8rem 1.6rem', background: 'transparent', border: '1px solid #ddd', borderRadius: 10, cursor: 'pointer' }}
+          >
+            Skip — book without a card
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 type Staff = {
   id: string
@@ -44,7 +120,7 @@ function formatDateTime(dateStr: string, slot: string): string {
   })
 }
 
-type Step = 'details' | 'review' | 'done'
+type Step = 'details' | 'review' | 'card' | 'done'
 
 export default function BookingForm({
   tenantId,
@@ -53,6 +129,9 @@ export default function BookingForm({
   service,
   staffList,
   shopOpeningHours,
+  noShowProtectionEnabled,
+  noShowCardRequired,
+  noShowFeeAmount,
 }: {
   tenantId: string
   tenantName: string
@@ -60,6 +139,9 @@ export default function BookingForm({
   service: Service
   staffList: Staff[]
   shopOpeningHours: WorkingHours
+  noShowProtectionEnabled: boolean
+  noShowCardRequired: boolean
+  noShowFeeAmount: number | null
 }) {
   const [step, setStep] = useState<Step>('details')
   const [selectedStaffId, setSelectedStaffId] = useState(staffList[0]?.id || '')
@@ -71,6 +153,8 @@ export default function BookingForm({
   const [confirmedManageUrl, setConfirmedManageUrl] = useState('')
   const [error, setError] = useState('')
   const [lastBooking, setLastBooking] = useState<{ start_time: string; service_name: string | null } | null>(null)
+  const [cardSetup, setCardSetup] = useState<{ clientSecret: string; customerId: string } | null>(null)
+  const [startingCard, setStartingCard] = useState(false)
 
   const selectedStaff = staffList.find((s) => s.id === selectedStaffId)
 
@@ -101,7 +185,40 @@ export default function BookingForm({
     setStep('review')
   }
 
-  async function handleFinalConfirm() {
+  // If this shop has no-show protection on, "Confirm booking" doesn't insert
+  // the booking straight away — it first asks Stripe for a SetupIntent so
+  // the next step can collect a card (or let the customer skip, when the
+  // shop allows that).
+  async function handleReviewConfirm() {
+    if (!noShowProtectionEnabled) {
+      await handleFinalConfirm()
+      return
+    }
+    if (!stripePromise) {
+      setError("This shop's card setup isn't configured correctly — please contact the shop directly.")
+      return
+    }
+
+    setStartingCard(true)
+    setError('')
+    const res = await fetch('/api/bookings/setup-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId, customerName: name, customerEmail: email }),
+    })
+    const body = await res.json().catch(() => ({}))
+    setStartingCard(false)
+
+    if (!res.ok || !body.clientSecret) {
+      setError(body.error || 'Could not start card setup.')
+      return
+    }
+
+    setCardSetup({ clientSecret: body.clientSecret, customerId: body.customerId })
+    setStep('card')
+  }
+
+  async function handleFinalConfirm(cardDetails?: { customerId: string; paymentMethodId: string } | null) {
     if (!selection) return
     setSubmitting(true)
     setError('')
@@ -128,6 +245,8 @@ export default function BookingForm({
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
       manage_token: manageToken,
+      customer_stripe_customer_id: cardDetails?.customerId || null,
+      customer_payment_method_id: cardDetails?.paymentMethodId || null,
     })
 
     if (insertError) {
@@ -220,20 +339,56 @@ export default function BookingForm({
           Please check these details before confirming — the shop will use them to reach you about your appointment.
         </p>
 
+        {noShowProtectionEnabled && (
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {noShowCardRequired ? "This shop asks for a card to confirm your booking — nothing is charged now." : 'This shop may ask for a card to confirm your booking — nothing is charged now.'}
+            {noShowFeeAmount != null && ` A £${noShowFeeAmount.toFixed(2)} fee may apply if you don't show up.`}
+          </p>
+        )}
+
         {error && <p className="error-text">{error}</p>}
 
         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-          <button className="btn-primary" onClick={handleFinalConfirm} disabled={submitting}>
-            {submitting ? 'Booking...' : 'Confirm booking'}
+          <button className="btn-primary" onClick={handleReviewConfirm} disabled={submitting || startingCard}>
+            {submitting || startingCard ? 'Booking...' : noShowProtectionEnabled ? 'Continue to add a card' : 'Confirm booking'}
           </button>
           <button
             onClick={() => setStep('details')}
-            disabled={submitting}
+            disabled={submitting || startingCard}
             style={{ padding: '0.8rem 1.6rem', background: 'transparent', border: '1px solid #ddd', borderRadius: 10, cursor: 'pointer' }}
           >
             Back
           </button>
         </div>
+      </div>
+    )
+  }
+
+  if (step === 'card' && cardSetup && stripePromise) {
+    return (
+      <div>
+        <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem', marginBottom: '1rem' }}>
+          <h3 style={{ marginTop: 0 }}>Add a card</h3>
+          <p style={{ color: '#666', fontSize: '0.9rem' }}>
+            Nothing is charged now.{noShowFeeAmount != null && ` A £${noShowFeeAmount.toFixed(2)} fee may apply if you don't show up.`}
+          </p>
+          <Elements options={{ clientSecret: cardSetup.clientSecret }} stripe={stripePromise}>
+            <NoShowCardStep
+              cardRequired={noShowCardRequired}
+              submitting={submitting}
+              onSaved={(paymentMethodId) => handleFinalConfirm({ customerId: cardSetup.customerId, paymentMethodId })}
+              onSkip={() => handleFinalConfirm(null)}
+            />
+          </Elements>
+        </div>
+        {error && <p className="error-text">{error}</p>}
+        <button
+          onClick={() => setStep('review')}
+          disabled={submitting}
+          style={{ padding: '0.8rem 1.6rem', background: 'transparent', border: '1px solid #ddd', borderRadius: 10, cursor: 'pointer' }}
+        >
+          Back
+        </button>
       </div>
     )
   }

@@ -24,6 +24,10 @@ type Booking = {
   amount_paid: number | null
   service_name: string | null
   service_price: number | null
+  no_show?: boolean
+  no_show_fee_amount?: number | null
+  no_show_fee_status?: string
+  has_card?: boolean
 }
 
 function statusColors(status: string) {
@@ -82,6 +86,9 @@ export default function StaffPortalPage() {
   const [connectStatus, setConnectStatus] = useState<'not_connected' | 'pending' | 'connected' | null>(null)
   const [connectLoading, setConnectLoading] = useState(false)
   const [connectError, setConnectError] = useState('')
+
+  const [noShowBusyId, setNoShowBusyId] = useState<string | null>(null)
+  const [noShowError, setNoShowError] = useState<Record<string, string>>({})
 
   useEffect(() => {
     async function load() {
@@ -194,13 +201,21 @@ export default function StaffPortalPage() {
     const dayStart = new Date(dateStr + 'T00:00:00')
     const dayEnd = new Date(dateStr + 'T23:59:59')
 
-    const { data, error } = await supabase.rpc('staff_get_my_bookings', {
-      p_tenant_id: tenantId,
-      p_start: dayStart.toISOString(),
-      p_end: dayEnd.toISOString(),
-    })
+    const [{ data, error }, { data: noShowData }] = await Promise.all([
+      supabase.rpc('staff_get_my_bookings', {
+        p_tenant_id: tenantId,
+        p_start: dayStart.toISOString(),
+        p_end: dayEnd.toISOString(),
+      }),
+      supabase.rpc('staff_get_no_show_fields', {
+        p_tenant_id: tenantId,
+        p_start: dayStart.toISOString(),
+        p_end: dayEnd.toISOString(),
+      }),
+    ])
 
-    const bookings = (data as Booking[]) || []
+    const noShowById = new Map((noShowData || []).map((r: any) => [r.id, r]))
+    const bookings = ((data as Booking[]) || []).map((b) => ({ ...b, ...(noShowById.get(b.id) || {}) }))
     setDayBookings(bookings)
     setDayError(error ? error.message : '')
 
@@ -280,6 +295,40 @@ export default function StaffPortalPage() {
 
     await loadDay(selectedDate)
     await loadMonth(selectedDate)
+  }
+
+  async function callNoShowRoute(path: string, bookingId: string, body?: Record<string, unknown>) {
+    setNoShowBusyId(bookingId)
+    setNoShowError((e) => ({ ...e, [bookingId]: '' }))
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
+
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+      body: JSON.stringify(body || {}),
+    })
+    const result = await res.json().catch(() => ({}))
+    setNoShowBusyId(null)
+
+    if (!res.ok) {
+      setNoShowError((e) => ({ ...e, [bookingId]: result.error || 'Something went wrong.' }))
+      return false
+    }
+    await loadDay(selectedDate)
+    return true
+  }
+
+  async function markNoShow(bookingId: string, noShow: boolean) {
+    await callNoShowRoute(`/api/staff/bookings/${bookingId}/mark-no-show`, bookingId, { noShow })
+  }
+
+  async function chargeNoShow(bookingId: string) {
+    await callNoShowRoute(`/api/staff/bookings/${bookingId}/charge-no-show`, bookingId)
+  }
+
+  async function logNoShowFee(bookingId: string) {
+    await callNoShowRoute(`/api/staff/bookings/${bookingId}/log-no-show-fee`, bookingId)
   }
 
   async function downloadReport() {
@@ -607,6 +656,59 @@ export default function StaffPortalPage() {
                           : '—'}
                       </span>
                     )}
+                  </div>
+                )}
+                {b.status === 'confirmed' && new Date(b.start_time) < new Date() && (
+                  <div style={{ width: '100%', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+                    {!b.no_show ? (
+                      <button
+                        onClick={() => markNoShow(b.id, true)}
+                        disabled={noShowBusyId === b.id}
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: '0.85rem' }}
+                      >
+                        {noShowBusyId === b.id ? 'Saving...' : 'Mark as no-show'}
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#991b1b' }}>
+                          No-show{b.no_show_fee_amount != null && ` · ${money(Number(b.no_show_fee_amount))} fee`}
+                        </span>
+                        {b.no_show_fee_status === 'charged' ? (
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#166534' }}>✓ Charged</span>
+                        ) : b.no_show_fee_status === 'logged' ? (
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Logged as owed</span>
+                        ) : b.no_show_fee_amount != null ? (
+                          <>
+                            {b.has_card && (
+                              <button
+                                onClick={() => chargeNoShow(b.id)}
+                                disabled={noShowBusyId === b.id}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                              >
+                                {noShowBusyId === b.id ? 'Charging...' : `Charge ${money(Number(b.no_show_fee_amount))}`}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => logNoShowFee(b.id)}
+                              disabled={noShowBusyId === b.id}
+                              style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                            >
+                              Log as unpaid
+                            </button>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No no-show fee set for this shop</span>
+                        )}
+                        <button
+                          onClick={() => markNoShow(b.id, false)}
+                          disabled={noShowBusyId === b.id}
+                          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}
+                        >
+                          Undo
+                        </button>
+                      </div>
+                    )}
+                    {noShowError[b.id] && <p className="error-text" style={{ marginTop: '0.4rem' }}>{noShowError[b.id]}</p>}
                   </div>
                 )}
               </div>
