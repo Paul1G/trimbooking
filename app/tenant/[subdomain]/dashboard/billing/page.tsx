@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { BASE_FEE_PENCE, INCLUDED_STAFF, EXTRA_STAFF_FEE_PENCE } from '@/lib/billing'
+import { BASE_FEE_PENCE, INCLUDED_STAFF, EXTRA_STAFF_FEE_PENCE, monthlyAmountPence } from '@/lib/billing'
 import '../../tenant.css'
 
 type Tenant = {
@@ -150,9 +150,22 @@ export default function BillingPage() {
         )}
 
         <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Current plan</div>
+          <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>Current plan</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand, #111)' }}>
+              {money(monthlyAmountPence(staffCount))}
+            </span>
+            <span style={{ color: '#888', fontSize: '0.95rem' }}>/month</span>
+          </div>
           <p style={{ color: '#555', fontSize: '0.95rem', margin: '0 0 0.25rem' }}>
             {staffCount} staff member{staffCount === 1 ? '' : 's'}
+            {staffCount > INCLUDED_STAFF && (
+              <>
+                {' '}
+                ({money(BASE_FEE_PENCE)} for the first {INCLUDED_STAFF}, plus {staffCount - INCLUDED_STAFF} ×{' '}
+                {money(EXTRA_STAFF_FEE_PENCE)})
+              </>
+            )}
           </p>
           <p style={{ color: '#555', fontSize: '0.95rem', margin: 0 }}>
             Billed as:{' '}
@@ -214,8 +227,8 @@ export default function BillingPage() {
         </div>
 
         <p style={{ color: '#888', fontSize: '0.85rem', marginTop: '1.5rem' }}>
-          Your monthly amount is based on your current staff count ({staffCount} right now) — {money(BASE_FEE_PENCE)} for
-          up to {INCLUDED_STAFF} staff, plus {money(EXTRA_STAFF_FEE_PENCE)}/month for each staff member beyond that.
+          {money(BASE_FEE_PENCE)}/month covers up to {INCLUDED_STAFF} staff, plus {money(EXTRA_STAFF_FEE_PENCE)}/month
+          for each staff member beyond that — so the amount above updates automatically as you add or remove staff.
         </p>
       </div>
     </div>
