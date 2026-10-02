@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic'
 // panel's Enable/Disable toggle uses, so every existing check (public pages,
 // owner login/dashboard, staff portal) already enforces it. The admin panel
 // is where a trial gets extended or a shop gets marked as paid, either of
-// which stops it being caught here again.
+// which stops it being caught here again — as does giving a shop free
+// (comped) access, which exempts it from trial expiry entirely.
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -18,9 +19,10 @@ export async function GET(req: NextRequest) {
 
   const { data: expired, error } = await supabaseAdmin
     .from('tenants')
-    .select('id, name, subdomain, owner_id, paid, disabled, trial_ends_at')
+    .select('id, name, subdomain, owner_id, paid, disabled, trial_ends_at, comped')
     .eq('paid', false)
     .eq('disabled', false)
+    .eq('comped', false)
     .lt('trial_ends_at', new Date().toISOString())
 
   if (error) {

@@ -18,6 +18,8 @@ export const dynamic = 'force-dynamic'
 // check-trials disabling it and what lets the regular monthly cron
 // (send-invoices) pick it up from here on — no admin step required, though
 // marking a tenant "paid" by hand in /admin still works at any time too.
+// A shop given free (comped) access in /admin is skipped here entirely —
+// it never gets this invoice.
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -32,6 +34,7 @@ export async function GET(req: NextRequest) {
     .select('id, name, subdomain, owner_id, trial_ends_at')
     .eq('paid', false)
     .eq('disabled', false)
+    .eq('comped', false)
     .is('trial_invoice_sent_at', null)
     .gt('trial_ends_at', now.toISOString())
     .lte('trial_ends_at', sevenDaysOut.toISOString())

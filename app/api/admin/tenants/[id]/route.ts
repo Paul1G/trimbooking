@@ -23,6 +23,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.paid) update.disabled = false
   }
 
+  if (typeof body.comped === 'boolean') {
+    update.comped = body.comped
+    // Giving a shop free access also lifts any trial-related disable, same as
+    // marking it paid does; turning comped off again doesn't re-disable it on
+    // its own — the next automatic trial check (or an explicit Disable) does.
+    if (body.comped) update.disabled = false
+  }
+
   if (typeof body.extendDays === 'number' && body.extendDays > 0) {
     const { data: existing } = await supabaseAdmin
       .from('tenants')

@@ -13,6 +13,7 @@ type Tenant = {
   owner_email: string | null
   disabled: boolean
   paid: boolean
+  comped: boolean
   trial_ends_at: string | null
   stripe_customer_id: string | null
   billing_method: 'invoice' | 'subscription'
@@ -59,6 +60,7 @@ function invoiceStatusStyle(status: Invoice['status']) {
 }
 
 function trialLabel(t: Tenant): { text: string; bg: string; color: string } {
+  if (t.comped) return { text: 'Free access', bg: '#dbeafe', color: '#1e40af' }
   if (t.paid) return { text: 'Paid', bg: '#dcfce7', color: '#166534' }
   if (!t.trial_ends_at) return { text: 'No trial set', bg: '#f3f4f6', color: '#374151' }
 
@@ -249,6 +251,23 @@ export default function AdminPage() {
     if (!res.ok) {
       const result = await res.json().catch(() => ({}))
       setActionError(result.error || 'Could not update payment status.')
+      setBusyId(null)
+      return
+    }
+    await loadTenants()
+    setBusyId(null)
+  }
+
+  async function toggleComped(t: Tenant) {
+    setBusyId(t.id)
+    setActionError('')
+    const res = await authedFetch(`/api/admin/tenants/${t.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ comped: !t.comped }),
+    })
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}))
+      setActionError(result.error || 'Could not update free-access status.')
       setBusyId(null)
       return
     }
@@ -489,21 +508,24 @@ export default function AdminPage() {
                   {t.disabled ? 'Disabled' : 'Active'}
                 </span>
                 <span
-                  className={t.paid ? 'admin-badge admin-badge-paid' : 'admin-badge'}
+                  className={t.paid || t.comped ? 'admin-badge admin-badge-paid' : 'admin-badge'}
                   style={trialLabel(t)}
                 >
-                  {t.paid ? '✓ Paid' : trialLabel(t).text}
+                  {t.comped ? trialLabel(t).text : t.paid ? '✓ Paid' : trialLabel(t).text}
                 </span>
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {!t.paid && (
+                {!t.paid && !t.comped && (
                   <button className="admin-btn" onClick={() => extendTrial(t)} disabled={busyId === t.id}>
                     Extend trial +30 days
                   </button>
                 )}
                 <button className="admin-btn" onClick={() => togglePaid(t)} disabled={busyId === t.id}>
                   {t.paid ? 'Mark as unpaid' : 'Mark as paid'}
+                </button>
+                <button className="admin-btn" onClick={() => toggleComped(t)} disabled={busyId === t.id}>
+                  {t.comped ? 'Remove free access' : 'Give free access'}
                 </button>
                 <button className="admin-btn" onClick={() => invoiceNow(t)} disabled={busyId === t.id}>
                   Invoice now

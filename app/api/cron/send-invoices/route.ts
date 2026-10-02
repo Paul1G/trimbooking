@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     .select('id, name, subdomain, owner_id, paid, disabled, next_invoice_at')
     .eq('paid', true)
     .eq('disabled', false)
+    .eq('comped', false)
     .lte('next_invoice_at', now.toISOString())
 
   if (error) {
