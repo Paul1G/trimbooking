@@ -25,7 +25,7 @@ function isValidEmail(email: string): boolean {
 // new shop can sign up and start setting up their page immediately without
 // anyone at TrimBooking touching Supabase by hand.
 export async function POST(req: NextRequest) {
-  let body: { shopName?: string; subdomain?: string; email?: string; password?: string }
+  let body: { shopName?: string; subdomain?: string; email?: string; password?: string; termsAccepted?: boolean }
   try {
     body = await req.json()
   } catch {
@@ -39,6 +39,13 @@ export async function POST(req: NextRequest) {
 
   if (!shopName) {
     return NextResponse.json({ error: 'Please enter your shop name.' }, { status: 400 })
+  }
+  // Enforced server-side too, not just by disabling the checkbox client-side —
+  // this is what makes the Terms/Privacy acceptance (and the Stripe Connect
+  // disclosure inside the Terms) something that actually happened, rather
+  // than something the signup form merely displayed.
+  if (!body.termsAccepted) {
+    return NextResponse.json({ error: 'Please agree to the Terms of Service and Privacy Policy to continue.' }, { status: 400 })
   }
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
@@ -93,6 +100,7 @@ export async function POST(req: NextRequest) {
       // A gate for the monthly billing cron, not tied to anything charged
       // yet — it only ever fires once this tenant is also marked `paid`.
       next_invoice_at: startOfNextMonth(now).toISOString(),
+      terms_accepted_at: now.toISOString(),
     })
     .select('id')
     .single()

@@ -13,6 +13,7 @@ export default function SignupPage() {
   const [subdomainTouched, setSubdomainTouched] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   // Result of the most recently completed availability check — compared against
   // the current `subdomain` at render time to know whether a check is still in flight,
   // rather than tracking a separate "checking" flag set synchronously in the effect.
@@ -108,13 +109,17 @@ export default function SignupPage() {
       setError('Password must be at least 8 characters.')
       return
     }
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy to continue.')
+      return
+    }
 
     setSubmitting(true)
     try {
       const res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopName, subdomain, email, password }),
+        body: JSON.stringify({ shopName, subdomain, email, password, termsAccepted: agreedToTerms }),
       })
       const result = await res.json()
       if (!res.ok) {
@@ -279,9 +284,29 @@ export default function SignupPage() {
             />
           </div>
 
-          {error && <p style={{ color: '#dc2626', fontSize: '0.9rem' }}>{error}</p>}
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--muted)', marginTop: '0.5rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              style={{ marginTop: '3px', flexShrink: 0 }}
+            />
+            <span>
+              I agree to TrimBooking&apos;s{' '}
+              <Link href="/terms" target="_blank" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" target="_blank" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                Privacy Policy
+              </Link>
+              , including Stripe&apos;s terms for the payment and payout features TrimBooking uses.
+            </span>
+          </label>
 
-          <button className="btn-dark" style={{ width: '100%', marginTop: '0.5rem' }} onClick={handleSubmit} disabled={submitting}>
+          {error && <p style={{ color: '#dc2626', fontSize: '0.9rem', marginTop: '0.75rem' }}>{error}</p>}
+
+          <button className="btn-dark" style={{ width: '100%', marginTop: '0.75rem' }} onClick={handleSubmit} disabled={submitting || !agreedToTerms}>
             {submitting ? 'Setting up your shop...' : 'Create my shop'}
           </button>
         </div>
