@@ -464,10 +464,23 @@ export default function StaffPage() {
               </div>
             )}
 
-            {email && editingId !== 'new' && (
-              <div className="field-group">
-                <label className="field-label">Dashboard admin</label>
-                {viewerRole === 'owner' ? (
+            <div className="field-group">
+              <label className="field-label">Dashboard admin</label>
+              {editingId === 'new' ? (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                    Save this staff member first — you can grant dashboard admin access from their
+                    profile afterwards.
+                  </p>
+                ) : !email ? (
+                  // A staff member needs their own portal login to use the dashboard at
+                  // all, so there's nothing to grant until a portal email is set above
+                  // (and saved) — shown explicitly rather than just hiding the control,
+                  // which otherwise looks like there's no way to promote anyone.
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                    Add a portal email above (and save) before this person can be made a dashboard admin —
+                    they need their own login to use the dashboard.
+                  </p>
+                ) : viewerRole === 'owner' ? (
                   <>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer', marginTop: '0.4rem' }}>
                       <input
@@ -494,8 +507,7 @@ export default function StaffPage() {
                     {isShopAdmin ? 'Yes — only the owner can change this.' : 'No — only the owner can grant this.'}
                   </p>
                 )}
-              </div>
-            )}
+            </div>
 
             <div className="field-group">
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
