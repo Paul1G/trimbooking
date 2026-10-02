@@ -476,43 +476,45 @@ export default function StaffPage() {
             editingId === member.id ? (
               <div key={member.id}>{editForm}</div>
             ) : (
-              <div key={member.id} className="card" style={{ cursor: 'default' }}>
-                {member.photo_url ? (
-                  <img src={member.photo_url} alt={member.name} className="avatar" />
-                ) : (
-                  <div className="avatar-fallback">{member.name[0]}</div>
-                )}
-                <div style={{ flex: 1 }}>
-                  <div className="card-title">{member.name}</div>
-                  <div className="card-sub">
-                    {member.role}
-                    {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
+              <div key={member.id} className="card staff-card" style={{ cursor: 'default' }}>
+                <div className="staff-card-info">
+                  {member.photo_url ? (
+                    <img src={member.photo_url} alt={member.name} className="avatar" />
+                  ) : (
+                    <div className="avatar-fallback">{member.name[0]}</div>
+                  )}
+                  <div>
+                    <div className="card-title">{member.name}</div>
+                    <div className="card-sub">
+                      {member.role}
+                      {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
+                    </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div className="staff-actions">
                   <Link
                     href={`/dashboard/staff/${member.id}`}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem' }}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
                   >
                     Calendar
                   </Link>
                   {member.user_id && ownerUserId && member.user_id === ownerUserId && (
                     <Link
                       href="/staff"
-                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', textDecoration: 'none', fontSize: '0.9rem' }}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', textDecoration: 'none', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
                     >
                       My earnings
                     </Link>
                   )}
                   <button
                     onClick={() => startEdit(member)}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteStaff(member.id)}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer', whiteSpace: 'nowrap' }}
                   >
                     Delete
                   </button>
