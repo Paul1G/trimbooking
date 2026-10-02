@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import WeeklyHoursEditor, { WorkingHours } from '../WeeklyHoursEditor'
-import BreaksEditor, { BreakWindows } from '../BreaksEditor'
+import ScheduleEditor, { WorkingHours, BreakWindows } from '../ScheduleEditor'
 import '../../tenant.css'
 
 type Staff = {
@@ -434,21 +433,19 @@ export default function StaffPage() {
             </div>
 
             <div className="field-group">
-              <label className="field-label">Working hours</label>
+              <label className="field-label">Working hours &amp; breaks</label>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.6rem' }}>
-                The days and hours this person is available to book. Customers can only book within
-                both this and the shop&apos;s opening hours.
+                The days and hours this person is available to book — customers can only book
+                within both this and the shop&apos;s opening hours — plus any lunch, meetings or
+                other time within those hours that shouldn&apos;t be bookable. Add as many breaks
+                as needed per day.
               </p>
-              <WeeklyHoursEditor value={workingHours} onChange={setWorkingHours} />
-            </div>
-
-            <div className="field-group">
-              <label className="field-label">Breaks</label>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 0.6rem' }}>
-                Block out lunch, meetings, or any other time within their working hours that
-                shouldn&apos;t be bookable. Add as many as needed per day.
-              </p>
-              <BreaksEditor value={breaks} onChange={setBreaks} />
+              <ScheduleEditor
+                hours={workingHours}
+                onHoursChange={setWorkingHours}
+                breaks={breaks}
+                onBreaksChange={setBreaks}
+              />
             </div>
 
             {error && <p className="error-text">{error}</p>}
