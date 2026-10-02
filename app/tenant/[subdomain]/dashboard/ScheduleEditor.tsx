@@ -16,8 +16,10 @@ const DAYS: { key: string; label: string }[] = [
 export type { WorkingHours, BreakWindows }
 
 // Combines the working-hours and breaks editors into one widget — a single
-// row per day, hours on the left and that day's breaks on the right, so the
-// two don't need to be scanned as separate stacked sections.
+// row per day, hours and that day's breaks side by side on a wide screen.
+// Below the `schedule-editor` breakpoint (see tenant.css) each day's breaks
+// drop underneath its hours instead of squeezing into a second column, so
+// nothing has to scroll sideways out of its box on a phone.
 export default function ScheduleEditor({
   hours,
   onHoursChange,
@@ -80,32 +82,19 @@ export default function ScheduleEditor({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <div style={{ display: 'flex', gap: '1rem', padding: '0 0 0.3rem' }}>
-        <div style={{ width: 300, fontSize: '0.78rem', fontWeight: 600, color: '#888', flexShrink: 0 }}>
-          Working hours
-        </div>
-        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#888', borderLeft: '1px solid #eee', paddingLeft: '1rem' }}>
-          Breaks
-        </div>
+    <div className="schedule-editor">
+      <div className="schedule-header">
+        <div className="schedule-header-hours">Working hours</div>
+        <div className="schedule-header-breaks">Breaks</div>
       </div>
       {DAYS.map((day) => {
         const isOpen = Boolean(hours[day.key])
         const dayHours = hours[day.key] || ['09:00', '17:00']
         const dayBreaks = breaks[day.key] || []
         return (
-          <div
-            key={day.key}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '1rem',
-              padding: '0.5rem 0',
-              borderBottom: '1px solid #f0f0f0',
-            }}
-          >
-            <div style={{ width: 300, display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: 95, flexShrink: 0, fontSize: '0.85rem' }}>
+          <div key={day.key} className="schedule-row">
+            <div className="schedule-hours">
+              <label className="schedule-day-label">
                 <input
                   type="checkbox"
                   checked={isOpen}
@@ -119,69 +108,45 @@ export default function ScheduleEditor({
                     type="time"
                     value={dayHours[0]}
                     onChange={(e) => setTime(day.key, 0, e.target.value)}
-                    style={{ width: 95, padding: '4px 6px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.8rem' }}
+                    className="schedule-time-input"
                   />
-                  <span style={{ color: '#999', fontSize: '0.8rem' }}>to</span>
+                  <span className="schedule-to">to</span>
                   <input
                     type="time"
                     value={dayHours[1]}
                     onChange={(e) => setTime(day.key, 1, e.target.value)}
-                    style={{ width: 95, padding: '4px 6px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.8rem' }}
+                    className="schedule-time-input"
                   />
                 </>
               ) : (
-                <span style={{ color: '#999', fontSize: '0.85rem' }}>Closed</span>
+                <span className="schedule-closed">Closed</span>
               )}
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.4rem',
-                flex: 1,
-                borderLeft: '1px solid #eee',
-                paddingLeft: '1rem',
-              }}
-            >
-              {dayBreaks.length === 0 && (
-                <span style={{ color: '#999', fontSize: '0.85rem', paddingTop: '0.3rem' }}>No breaks</span>
-              )}
+            <div className="schedule-breaks">
+              <div className="schedule-mobile-label">Breaks</div>
+              {dayBreaks.length === 0 && <span className="schedule-closed">No breaks</span>}
               {dayBreaks.map((b, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div key={i} className="schedule-break-row">
                   <input
                     type="time"
                     value={b[0]}
                     onChange={(e) => setBreakTime(day.key, i, 0, e.target.value)}
-                    style={{ width: 95, padding: '4px 6px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.8rem' }}
+                    className="schedule-time-input"
                   />
-                  <span style={{ color: '#999', fontSize: '0.8rem' }}>to</span>
+                  <span className="schedule-to">to</span>
                   <input
                     type="time"
                     value={b[1]}
                     onChange={(e) => setBreakTime(day.key, i, 1, e.target.value)}
-                    style={{ width: 95, padding: '4px 6px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.8rem' }}
+                    className="schedule-time-input"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeBreak(day.key, i)}
-                    style={{
-                      border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer',
-                      fontSize: '0.8rem', padding: '2px 6px',
-                    }}
-                  >
+                  <button type="button" onClick={() => removeBreak(day.key, i)} className="schedule-remove-btn">
                     Remove
                   </button>
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={() => addBreak(day.key)}
-                style={{
-                  alignSelf: 'flex-start', border: '1px solid #ddd', background: '#fff',
-                  borderRadius: 6, padding: '4px 10px', fontSize: '0.8rem', cursor: 'pointer', color: '#374151',
-                }}
-              >
+              <button type="button" onClick={() => addBreak(day.key)} className="schedule-add-btn">
                 + Add break
               </button>
             </div>

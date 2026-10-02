@@ -296,13 +296,19 @@ export default function StaffPage() {
     )
   }
 
-  // Rendered inline, in place of whichever staff member is being edited (or
-  // appended below the list when adding a new one), rather than always
-  // appearing at the bottom of the page — otherwise editing the first staff
-  // member in a long list dropped the form somewhere you'd have to scroll to
-  // find.
+  // Shown on its own in place of the whole team list while adding or
+  // editing a member, so only that one person's data is on the page —
+  // nothing else to scroll past or mistake it for.
   const editForm = editingId ? (
           <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch' }}>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="back-link"
+              style={{ background: 'none', border: 'none', padding: 0, marginBottom: '0.75rem', cursor: 'pointer', textAlign: 'left' }}
+            >
+              ← Back to staff
+            </button>
             <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'Add staff member' : 'Edit staff member'}</h3>
 
             <div className="field-group">
@@ -351,7 +357,7 @@ export default function StaffPage() {
             {email && (
               <div className="field-group">
                 <label className="field-label">Portal access level</label>
-                <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
                     <input
                       type="radio"
@@ -450,7 +456,7 @@ export default function StaffPage() {
 
             {error && <p className="error-text">{error}</p>}
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className="form-actions">
               <button className="btn-primary" onClick={saveStaff}>Save</button>
               <button
                 onClick={cancelEdit}
@@ -471,66 +477,68 @@ export default function StaffPage() {
           <h1>Staff</h1>
         </div>
 
-        <div className="card-list">
-          {staffList.map((member) =>
-            editingId === member.id ? (
-              <div key={member.id}>{editForm}</div>
-            ) : (
-              <div key={member.id} className="card staff-card" style={{ cursor: 'default' }}>
-                <div className="staff-card-info">
-                  {member.photo_url ? (
-                    <img src={member.photo_url} alt={member.name} className="avatar" />
-                  ) : (
-                    <div className="avatar-fallback">{member.name[0]}</div>
-                  )}
-                  <div>
-                    <div className="card-title">{member.name}</div>
-                    <div className="card-sub">
-                      {member.role}
-                      {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
+        {editingId ? (
+          // Editing (or adding) shows only that one staff member's form —
+          // the rest of the team list is hidden rather than left showing
+          // underneath/around it, so there's nothing else on the page to
+          // confuse with the member actually being edited.
+          editForm
+        ) : (
+          <>
+            <div className="card-list">
+              {staffList.map((member) => (
+                <div key={member.id} className="card staff-card" style={{ cursor: 'default' }}>
+                  <div className="staff-card-info">
+                    {member.photo_url ? (
+                      <img src={member.photo_url} alt={member.name} className="avatar" />
+                    ) : (
+                      <div className="avatar-fallback">{member.name[0]}</div>
+                    )}
+                    <div>
+                      <div className="card-title">{member.name}</div>
+                      <div className="card-sub">
+                        {member.role}
+                        {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="staff-actions">
-                  <Link
-                    href={`/dashboard/staff/${member.id}`}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
-                  >
-                    Calendar
-                  </Link>
-                  {member.user_id && ownerUserId && member.user_id === ownerUserId && (
+                  <div className="staff-actions">
                     <Link
-                      href="/staff"
-                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', textDecoration: 'none', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                      href={`/dashboard/staff/${member.id}`}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
                     >
-                      My earnings
+                      Calendar
                     </Link>
-                  )}
-                  <button
-                    onClick={() => startEdit(member)}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deleteStaff(member.id)}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >
-                    Delete
-                  </button>
+                    {member.user_id && ownerUserId && member.user_id === ownerUserId && (
+                      <Link
+                        href="/staff"
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', textDecoration: 'none', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                      >
+                        My earnings
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => startEdit(member)}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteStaff(member.id)}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', color: '#dc2626', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )
-          )}
-        </div>
+              ))}
+            </div>
 
-        {editingId === 'new' ? (
-          <div style={{ marginTop: '1.5rem' }}>{editForm}</div>
-        ) : !editingId ? (
-          <button className="btn-primary" style={{ marginTop: '1.5rem' }} onClick={startAdd}>
-            + Add staff member
-          </button>
-        ) : null}
+            <button className="btn-primary" style={{ marginTop: '1.5rem' }} onClick={startAdd}>
+              + Add staff member
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

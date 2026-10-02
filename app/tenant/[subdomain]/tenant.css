@@ -361,3 +361,169 @@
   font-size: 0.9rem;
   margin: 0.5rem 0;
 }
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions > button {
+    width: 100%;
+  }
+
+  .tenant-container {
+    padding: 1.5rem 1rem 3rem;
+  }
+}
+
+.schedule-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.schedule-header {
+  display: flex;
+  gap: 1rem;
+  padding: 0 0 0.3rem;
+}
+
+.schedule-header-hours {
+  width: 300px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+}
+
+.schedule-header-breaks {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  border-left: 1px solid #eee;
+  padding-left: 1rem;
+}
+
+.schedule-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.schedule-hours {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.schedule-day-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 95px;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.schedule-time-input {
+  width: 95px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 0.8rem;
+}
+
+.schedule-to {
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.schedule-closed {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.schedule-breaks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-left: 1px solid #eee;
+  padding-left: 1rem;
+}
+
+.schedule-break-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.schedule-remove-btn {
+  border: none;
+  background: none;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+}
+
+.schedule-add-btn {
+  align-self: flex-start;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #374151;
+}
+
+.schedule-mobile-label {
+  display: none;
+}
+
+/* Below this width the two-column hours/breaks layout no longer has room
+   to sit side by side, so each day's breaks drop to their own full-width
+   block underneath its working hours instead of overflowing sideways. */
+@media (max-width: 600px) {
+  .schedule-header {
+    display: none;
+  }
+
+  .schedule-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .schedule-hours,
+  .schedule-breaks {
+    width: 100%;
+  }
+
+  .schedule-breaks {
+    border-left: none;
+    border-top: 1px solid #eee;
+    padding-left: 0;
+    padding-top: 0.5rem;
+  }
+
+  .schedule-mobile-label {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #888;
+  }
+}
