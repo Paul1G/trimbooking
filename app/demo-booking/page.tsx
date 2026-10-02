@@ -24,7 +24,7 @@ const STAFF: Staff[] = [
 
 const SLOTS = ['9:00 AM', '9:45 AM', '10:30 AM', '11:15 AM', '1:00 PM', '2:30 PM', '3:15 PM', '4:00 PM']
 
-type Step = 'services' | 'slot' | 'details' | 'review' | 'done'
+type Step = 'services' | 'slot' | 'details' | 'review' | 'card' | 'done'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -39,8 +39,10 @@ export default function DemoBookingPage() {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
+  const [cardSaved, setCardSaved] = useState(false)
 
   const staffMember = STAFF.find((s) => s.id === staffId)
+  const noShowFee = service ? Math.round(service.price * 0.5) : 0
 
   function chooseService(s: Service) {
     setService(s)
@@ -74,6 +76,7 @@ export default function DemoBookingPage() {
     setPhone('')
     setEmail('')
     setError('')
+    setCardSaved(false)
   }
 
   return (
@@ -132,7 +135,21 @@ export default function DemoBookingPage() {
       <div className="tenant-app" style={{ background: 'transparent', ['--brand' as any]: '#9d174d' }}>
         <div className="tenant-container">
           {step !== 'services' && step !== 'done' && (
-            <a className="back-link" style={{ cursor: 'pointer' }} onClick={() => setStep(step === 'slot' ? 'services' : step === 'details' ? 'slot' : 'details')}>
+            <a
+              className="back-link"
+              style={{ cursor: 'pointer' }}
+              onClick={() =>
+                setStep(
+                  step === 'slot'
+                    ? 'services'
+                    : step === 'details'
+                    ? 'slot'
+                    : step === 'review'
+                    ? 'details'
+                    : 'review'
+                )
+              }
+            >
               ← Back
             </a>
           )}
@@ -225,8 +242,45 @@ export default function DemoBookingPage() {
                 <div className="card-sub">£{service.price} · {service.duration} min</div>
                 <div className="card-sub" style={{ marginTop: '0.5rem' }}>{name} · {phone} · {email}</div>
               </div>
-              <button className="btn-primary" style={{ marginTop: '1.5rem' }} onClick={() => setStep('done')}>
-                Confirm booking
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+                This shop has <strong>no-show protection</strong> turned on, so we&apos;ll ask for a card next —
+                it won&apos;t be charged unless this booking is missed.
+              </p>
+              <button className="btn-primary" style={{ marginTop: '0.5rem' }} onClick={() => setStep('card')}>
+                Continue
+              </button>
+            </>
+          )}
+
+          {step === 'card' && service && (
+            <>
+              <div className="tenant-hero" style={{ marginTop: '1rem' }}>
+                <h1>Secure your booking</h1>
+                <p>
+                  A card is required to confirm this booking. If you don&apos;t show up, a £{noShowFee} no-show
+                  fee may be charged — otherwise nothing is taken.
+                </p>
+              </div>
+              <div className="field-group">
+                <label className="field-label">Card number</label>
+                <input className="field-input" placeholder="4242 4242 4242 4242" disabled={cardSaved} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className="field-group" style={{ flex: 1 }}>
+                  <label className="field-label">Expiry</label>
+                  <input className="field-input" placeholder="12 / 34" disabled={cardSaved} />
+                </div>
+                <div className="field-group" style={{ flex: 1 }}>
+                  <label className="field-label">CVC</label>
+                  <input className="field-input" placeholder="123" disabled={cardSaved} />
+                </div>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                This is a sample card form — it&apos;s not connected to a real payment processor, and no
+                card details are collected here. On a live shop, this step is a secure Stripe card form.
+              </p>
+              <button className="btn-primary" onClick={() => { setCardSaved(true); setStep('done') }}>
+                Save card &amp; confirm booking
               </button>
             </>
           )}
@@ -238,6 +292,7 @@ export default function DemoBookingPage() {
                 In a real shop, {name || 'the customer'} would now get an email confirming this request,
                 and another as soon as the owner confirms it — the same way a customer books on your
                 own page.
+                {cardSaved && ' Their card is now held securely by Stripe, ready in case of a no-show.'}
               </p>
               <button className="btn-primary" onClick={reset}>Try it again</button>
             </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { supabase } from '@/lib/supabase'
@@ -291,10 +292,13 @@ export default function BookingForm({
         </p>
         <p style={{ color: '#166534' }}>A confirmation has been noted for {email}.</p>
         {confirmedManageUrl && (
-          <p style={{ marginBottom: 0 }}>
+          <p>
             <a href={confirmedManageUrl}>Manage or reschedule this booking</a>
           </p>
         )}
+        <p style={{ marginBottom: 0 }}>
+          <Link href="/">&larr; Back to {tenantName}</Link>
+        </p>
       </div>
     )
   }

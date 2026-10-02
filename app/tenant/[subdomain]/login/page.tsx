@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import '../tenant.css'
 
@@ -93,6 +94,9 @@ export default function LoginPage() {
   return (
     <div className="tenant-app">
       <div className="tenant-container" style={{ maxWidth: 400 }}>
+        <p style={{ marginBottom: '1rem' }}>
+          <Link href="/" style={{ color: '#666', fontSize: '0.85rem' }}>&larr; Back to home</Link>
+        </p>
         <div className="tenant-hero">
           <h1>Owner Login</h1>
         </div>

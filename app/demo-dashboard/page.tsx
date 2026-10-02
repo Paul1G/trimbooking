@@ -16,6 +16,8 @@ type Booking = {
   status: BookingStatus
   price: number
   amountPaid: number | null
+  cardOnFile?: boolean
+  noShowFee?: number
 }
 
 type DemoVisit = { date: string; service: string }
@@ -25,7 +27,7 @@ const INITIAL_BOOKINGS: Booking[] = [
   { id: '1', time: '9:00 AM', customer: 'Sophie Bennett', service: 'Cut & Blow Dry', staff: 'Maya Chen', status: 'confirmed', price: 45, amountPaid: 45 },
   { id: '2', time: '10:30 AM', customer: 'Jordan Lee', service: 'Full Colour', staff: 'Ade Okafor', status: 'pending', price: 85, amountPaid: null },
   { id: '3', time: '11:15 AM', customer: 'Priya Sharma', service: 'Lash Lift', staff: 'Maya Chen', status: 'pending', price: 35, amountPaid: null },
-  { id: '4', time: '1:00 PM', customer: 'Tom Whitfield', service: "Men's Cut", staff: 'Callum Reed', status: 'confirmed', price: 28, amountPaid: null },
+  { id: '4', time: '1:00 PM', customer: 'Tom Whitfield', service: "Men's Cut", staff: 'Callum Reed', status: 'confirmed', price: 28, amountPaid: null, cardOnFile: true, noShowFee: 14 },
   { id: '5', time: '2:30 PM', customer: 'Freya Nilsen', service: 'Balayage', staff: 'Ade Okafor', status: 'pending', price: 120, amountPaid: null },
 ]
 
@@ -68,6 +70,9 @@ export default function DemoDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [amountInput, setAmountInput] = useState('')
+  const [billingMethod, setBillingMethod] = useState<'invoice' | 'subscription'>('invoice')
+  const [noShowProtection, setNoShowProtection] = useState(true)
+  const [noShowMessage, setNoShowMessage] = useState<string | null>(null)
 
   function setStatus(id: string, status: BookingStatus) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)))
@@ -76,6 +81,11 @@ export default function DemoDashboardPage() {
   function selectBooking(b: Booking) {
     setSelectedId(b.id)
     setAmountInput(b.amountPaid != null ? String(b.amountPaid) : '')
+    setNoShowMessage(null)
+  }
+
+  function chargeNoShow(b: Booking) {
+    setNoShowMessage(`£${b.noShowFee?.toFixed(2)} charged to ${b.customer}'s card on file, sent straight to ${b.staff}'s payout account.`)
   }
 
   function saveAmount() {
@@ -229,6 +239,41 @@ export default function DemoDashboardPage() {
             })}
           </div>
 
+          <h3 className="section-title">Billing &amp; no-show protection</h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
+            Two settings every shop controls for itself — try flipping them. It&apos;s all just for show.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
+            <div className="card" style={{ cursor: 'default', flex: '1 1 260px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+              <div className="card-title">How you get paid</div>
+              <div className="card-sub">
+                {billingMethod === 'invoice'
+                  ? 'Pay by invoice — a bill arrives each month, nothing to set up.'
+                  : 'Automatic billing — a card on file is charged each month.'}
+              </div>
+              <button
+                onClick={() => setBillingMethod((m) => (m === 'invoice' ? 'subscription' : 'invoice'))}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: '#fff', color: 'var(--brand)', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                Switch to {billingMethod === 'invoice' ? 'automatic billing' : 'pay by invoice'}
+              </button>
+            </div>
+            <div className="card" style={{ cursor: 'default', flex: '1 1 260px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+              <div className="card-title">No-show protection</div>
+              <div className="card-sub">
+                {noShowProtection
+                  ? 'On — customers add a card (not charged) when booking, in case they don’t show.'
+                  : 'Off — customers book with no card required.'}
+              </div>
+              <button
+                onClick={() => setNoShowProtection((v) => !v)}
+                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: '#fff', color: 'var(--brand)', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                Turn {noShowProtection ? 'off' : 'on'}
+              </button>
+            </div>
+          </div>
+
           <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
             <Link href="/signup" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
               Set up your own shop, free for 30 days
@@ -289,6 +334,29 @@ export default function DemoDashboardPage() {
                 </button>
               </div>
             </div>
+
+            {selected.cardOnFile && (
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', marginBottom: '0.5rem' }}>
+                  No-show protection
+                </div>
+                {noShowMessage ? (
+                  <p style={{ fontSize: '0.82rem', color: '#166534', margin: 0 }}>{noShowMessage}</p>
+                ) : (
+                  <>
+                    <p style={{ fontSize: '0.82rem', margin: '0 0 0.5rem', color: 'var(--text-muted)' }}>
+                      Card on file ✓ — if they don&apos;t show, you can charge a £{selected.noShowFee?.toFixed(2)} no-show fee.
+                    </p>
+                    <button
+                      onClick={() => chargeNoShow(selected)}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #dc2626', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      Mark as no-show &amp; charge £{selected.noShowFee?.toFixed(2)}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
             <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', marginBottom: '0.5rem' }}>

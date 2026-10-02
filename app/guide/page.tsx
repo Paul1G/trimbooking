@@ -9,8 +9,9 @@ const sections = [
   { id: "staff-portal", title: "5. Staff logins & the staff portal" },
   { id: "bookings", title: "6. Managing bookings" },
   { id: "customer-booking", title: "7. How customers book & manage appointments" },
-  { id: "account", title: "8. Your account, login & passwords" },
-  { id: "faq", title: "9. Frequently asked questions" },
+  { id: "billing", title: "8. Billing & no-show protection" },
+  { id: "account", title: "9. Your account, login & passwords" },
+  { id: "faq", title: "10. Frequently asked questions" },
 ];
 
 export default function GuidePage() {
@@ -188,10 +189,12 @@ export default function GuidePage() {
           <p>
             From their own portal, a staff member can click <strong>Set up
             payouts</strong> to connect a Stripe account in their own name.
-            This doesn&apos;t change how customers pay today — that&apos;s still in
-            person — it just gets that staff member ready to be paid out
-            directly as more payment features arrive, rather than always
-            settling up with you separately.
+            The service itself is still always paid in person — that
+            isn&apos;t changing — but if <strong>no-show protection</strong> is
+            turned on (see below) and a customer doesn&apos;t show up, a
+            charged no-show fee is paid straight to that staff member&apos;s
+            own connected account, rather than always settling up with you
+            separately.
           </p>
         </section>
 
@@ -253,8 +256,51 @@ export default function GuidePage() {
           </p>
         </section>
 
+        <section id="billing" className="doc-section">
+          <h2>8. Billing &amp; no-show protection</h2>
+          <p>
+            From <strong>Dashboard &rarr; Billing</strong>, choose how you&apos;d like to
+            pay once your free trial ends:
+          </p>
+          <ul>
+            <li>
+              <strong>Pay by invoice</strong> — the default. An invoice with a
+              secure Stripe payment link arrives each billing period; you pay it
+              yourself each time, and no card is ever stored.
+            </li>
+            <li>
+              <strong>Automatic billing</strong> — add a card once via Stripe
+              Checkout and it&apos;s charged automatically every month. Switch
+              back to pay-by-invoice at any time.
+            </li>
+          </ul>
+          <p>
+            If a payment is ever missed, you&apos;ll get a reminder email once a
+            day for a <strong>5-day grace period</strong> before your booking
+            page is paused — plenty of time to sort it out either way.
+          </p>
+          <h3>No-show protection</h3>
+          <p>
+            Turn this on from <strong>Dashboard &rarr; No-show protection</strong> to
+            ask customers for a card when they book — nothing is charged unless
+            they don&apos;t show up. You choose how the fee is worked out:
+          </p>
+          <ul>
+            <li><strong>Flat fee</strong> — the same amount for any booking.</li>
+            <li><strong>Percentage</strong> — a % of that booking&apos;s service price.</li>
+            <li><strong>Per service</strong> — set an individual fee on each service, in <strong>Services</strong>.</li>
+          </ul>
+          <p>
+            You can also choose whether a card is required to book at all, or
+            just offered. If a staff member marks a past confirmed booking as a
+            no-show from their portal, they can charge the saved card — paid
+            straight into their own connected Stripe account — or, if no card
+            was saved, log the fee as owed to chase up manually.
+          </p>
+        </section>
+
         <section id="account" className="doc-section">
-          <h2>8. Your account, login &amp; passwords</h2>
+          <h2>9. Your account, login &amp; passwords</h2>
           <p>
             Log in at <strong>yourshop.trimbooking.co.uk/login</strong> with the
             email and password you signed up with. If you&apos;ve forgotten your
@@ -269,7 +315,7 @@ export default function GuidePage() {
         </section>
 
         <section id="faq" className="doc-section">
-          <h2>9. Frequently asked questions</h2>
+          <h2>10. Frequently asked questions</h2>
           <h3>Can I change my business&apos;s web address?</h3>
           <p>Get in touch with TrimBooking support — changing it affects any links you&apos;ve already shared.</p>
           <h3>Can a customer book with any available staff member?</h3>
@@ -280,11 +326,18 @@ export default function GuidePage() {
           <p>No. Customers book with just their name and contact details, and manage their booking via the personal link in their confirmation email.</p>
           <h3>Is there a cost to try it?</h3>
           <p>
-            Every business gets a free 30-day trial with no card required. Your
-            dashboard shows a reminder as your trial nears its end — if your
-            account isn&apos;t marked as paid by then, your booking page is
-            temporarily switched off until you get in touch (see{" "}
-            <Link href="/about">About &amp; support</Link>).
+            Every business gets a free 30-day trial with no card required. About
+            a week before your trial ends, you&apos;ll get your first invoice
+            with a Stripe payment link so there&apos;s time to pay before
+            anything changes. If your account isn&apos;t marked as paid by the
+            end of your trial, your booking page is temporarily switched off
+            until you get in touch (see <Link href="/about">About &amp; support</Link>).
+          </p>
+          <h3>Does no-show protection cost anything to turn on?</h3>
+          <p>
+            No — it&apos;s included free with every plan. A fee is only ever
+            charged when a customer genuinely doesn&apos;t show up, and only if
+            you choose to charge it.
           </p>
         </section>
       </div>

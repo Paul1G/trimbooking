@@ -38,6 +38,12 @@ const features = [
     description:
       "List your services with prices and durations, and assign them to the right staff members in minutes.",
   },
+  {
+    icon: "🛡️",
+    title: "No-show protection",
+    description:
+      "Turn it on and customers add a card when booking — nothing is charged unless they don't show up. You choose the fee, and staff get paid out directly.",
+  },
 ];
 
 const steps = [

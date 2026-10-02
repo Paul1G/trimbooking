@@ -114,7 +114,25 @@ export default function PricingPage() {
             set up properly before paying anything.
           </p>
           <p>
-            Once you&apos;re on a paid plan, here&apos;s how invoicing works:
+            Once you&apos;re on a paid plan, you choose how you&apos;d like to
+            pay — whichever suits you better:
+          </p>
+          <ul>
+            <li>
+              <strong>Pay by invoice</strong> — a real invoice lands in your
+              inbox each billing period with a secure Stripe payment link.
+              Nothing is charged automatically and no card is stored; you pay
+              it yourself each time.
+            </li>
+            <li>
+              <strong>Automatic billing</strong> — add a card once and
+              it&apos;s charged automatically each month, so there&apos;s
+              nothing to remember. You can switch back to pay-by-invoice at
+              any time from your dashboard.
+            </li>
+          </ul>
+          <p>
+            Either way, billing follows the same schedule:
           </p>
           <ul>
             <li>
@@ -124,15 +142,14 @@ export default function PricingPage() {
               proportion of the full monthly fee for the days remaining.
             </li>
             <li>
-              <strong>After that</strong>, you&apos;re invoiced on the{" "}
+              <strong>After that</strong>, you&apos;re billed on the{" "}
               <strong>1st of each month, in advance</strong>, for the month
               ahead — based on however many staff members you have at that
               time.
             </li>
             <li>
               Adding or removing staff during the month doesn&apos;t change
-              what you&apos;re billed until the following month&apos;s
-              invoice.
+              what you&apos;re billed until the following month&apos;s bill.
             </li>
           </ul>
           <div className="doc-note">
@@ -141,9 +158,9 @@ export default function PricingPage() {
             2 staff beyond the included 4 = <strong>£25/month</strong>.
           </div>
           <p>
-            Invoices are emailed to the address you signed up with, and
-            currently include the amount due with payment instructions to
-            follow separately — get in touch any time at{" "}
+            If a payment is ever missed, you&apos;ll get a reminder email
+            every day for a 5-day grace period before anything is paused —
+            plenty of time to sort it out. Get in touch any time at{" "}
             <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a>{" "}
             if you have any questions about your bill.
           </p>
