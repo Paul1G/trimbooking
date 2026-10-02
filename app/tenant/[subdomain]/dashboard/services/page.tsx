@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { resolveShopRole } from '@/lib/shopAccess'
 import Link from 'next/link'
 import '../../tenant.css'
 
@@ -45,7 +46,8 @@ export default function ServicesPage() {
         .eq('subdomain', params.subdomain)
         .single()
 
-      if (!tenant || tenant.owner_id !== user.id) {
+      const role = tenant ? await resolveShopRole(supabase, tenant, user.id) : null
+      if (!tenant || !role) {
         router.push('/login')
         return
       }

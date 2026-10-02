@@ -6,6 +6,11 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import '../tenant.css'
 
+// A staff member's `is_shop_admin` flag determines where their login takes
+// them: straight to the shop dashboard (same destination as the owner) if
+// they've been promoted, or to their own staff portal otherwise. Either way,
+// their own earnings only ever live in /staff — see lib/shopAccess.ts.
+
 export default function LoginPage() {
   const router = useRouter()
   const params = useParams()
@@ -41,7 +46,7 @@ export default function LoginPage() {
       // Not the owner — check whether this account is a staff member here instead.
       const { data: staffRow } = await supabase
         .from('staff')
-        .select('id')
+        .select('id, is_shop_admin')
         .eq('tenant_id', tenant?.id || '')
         .eq('user_id', data.user.id)
         .maybeSingle()
@@ -60,7 +65,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/staff')
+      router.push(staffRow.is_shop_admin ? '/dashboard' : '/staff')
       return
     }
 

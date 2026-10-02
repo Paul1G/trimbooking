@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { resolveShopRole, ShopRole } from '@/lib/shopAccess'
 import Link from 'next/link'
 import ScheduleEditor, { WorkingHours, BreakWindows } from '../ScheduleEditor'
 import '../../tenant.css'
@@ -20,6 +21,7 @@ type Staff = {
   user_id: string | null
   invited_at: string | null
   auto_confirm_bookings: boolean | null
+  is_shop_admin: boolean | null
 }
 
 type Service = {
@@ -47,11 +49,19 @@ export default function StaffPage() {
   const [email, setEmail] = useState('')
   const [accessLevel, setAccessLevel] = useState<'user' | 'admin'>('user')
   const [autoConfirmBookings, setAutoConfirmBookings] = useState(false)
+  const [isShopAdmin, setIsShopAdmin] = useState(false)
+  const [savingShopAdmin, setSavingShopAdmin] = useState(false)
+  const [shopAdminError, setShopAdminError] = useState('')
   const [error, setError] = useState('')
   const [inviteStatus, setInviteStatus] = useState<Record<string, string>>({})
   const [invitingId, setInvitingId] = useState<string | null>(null)
   const [ownerEmail, setOwnerEmail] = useState('')
   const [ownerUserId, setOwnerUserId] = useState('')
+  // Whoever is actually viewing this page right now — the owner, or a staff
+  // member promoted to dashboard admin. Only an owner may grant or revoke
+  // that promotion (see the admin-toggle control below), even though both
+  // roles can otherwise manage staff the same way.
+  const [viewerRole, setViewerRole] = useState<ShopRole | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -68,7 +78,8 @@ export default function StaffPage() {
         .eq('subdomain', params.subdomain)
         .single()
 
-      if (!tenant || tenant.owner_id !== user.id) {
+      const role = tenant ? await resolveShopRole(supabase, tenant, user.id) : null
+      if (!tenant || !role) {
         router.push('/login')
         return
       }
@@ -77,6 +88,7 @@ export default function StaffPage() {
       setBrandColor(tenant.brand_color)
       setOwnerEmail(user.email || '')
       setOwnerUserId(user.id)
+      setViewerRole(role)
       await loadStaff(tenant.id)
 
       const { data: services } = await supabase
@@ -112,6 +124,8 @@ export default function StaffPage() {
     setEmail('')
     setAccessLevel('user')
     setAutoConfirmBookings(false)
+    setIsShopAdmin(false)
+    setShopAdminError('')
     setError('')
   }
 
@@ -126,6 +140,8 @@ export default function StaffPage() {
     setEmail(member.email || '')
     setAccessLevel(member.access_level === 'admin' ? 'admin' : 'user')
     setAutoConfirmBookings(!!member.auto_confirm_bookings)
+    setIsShopAdmin(!!member.is_shop_admin)
+    setShopAdminError('')
     setError('')
 
     const { data: links } = await supabase
@@ -261,6 +277,31 @@ export default function StaffPage() {
     setInviteStatus((prev) => ({ ...prev, [member.id]: 'Invite sent!' }))
     setInvitingId(null)
     if (tenantId) await loadStaff(tenantId)
+  }
+
+  // Owner-only, enforced server-side by the owner_set_staff_admin RPC (not
+  // just by this control being hidden from non-owners) — see the migration
+  // that added it for why. Requires the staff row to already exist, so it's
+  // only offered once a member has been saved at least once.
+  async function toggleShopAdmin(member: Staff, nextValue: boolean) {
+    if (!tenantId) return
+    setSavingShopAdmin(true)
+    setShopAdminError('')
+
+    const { error: rpcError } = await supabase.rpc('owner_set_staff_admin', {
+      p_tenant_id: tenantId,
+      p_staff_id: member.id,
+      p_is_admin: nextValue,
+    })
+
+    setSavingShopAdmin(false)
+    if (rpcError) {
+      setShopAdminError(rpcError.message)
+      return
+    }
+
+    setIsShopAdmin(nextValue)
+    setStaffList((prev) => prev.map((s) => (s.id === member.id ? { ...s, is_shop_admin: nextValue } : s)))
   }
 
   async function deleteStaff(id: string) {
@@ -407,6 +448,39 @@ export default function StaffPage() {
               </div>
             )}
 
+            {email && editingId !== 'new' && (
+              <div className="field-group">
+                <label className="field-label">Dashboard admin</label>
+                {viewerRole === 'owner' ? (
+                  <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer', marginTop: '0.4rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={isShopAdmin}
+                        disabled={savingShopAdmin}
+                        onChange={(e) => {
+                          const member = staffList.find((s) => s.id === editingId)
+                          if (member) toggleShopAdmin(member, e.target.checked)
+                        }}
+                      />
+                      Give this person admin access to this dashboard
+                    </label>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                      Lets them manage services, staff, hours, bookings, customers, holidays, branding
+                      and no-show settings — the same as you, except billing and other staff members&apos;
+                      individual schedules and earnings, which stay owner-only. Their own earnings still
+                      only ever show in their own staff portal, and only you can grant or remove this.
+                    </p>
+                    {shopAdminError && <p className="error-text" style={{ marginTop: '0.4rem' }}>{shopAdminError}</p>}
+                  </>
+                ) : (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                    {isShopAdmin ? 'Yes — only the owner can change this.' : 'No — only the owner can grant this.'}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="field-group">
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
                 <input
@@ -499,16 +573,19 @@ export default function StaffPage() {
                       <div className="card-sub">
                         {member.role}
                         {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
+                        {member.is_shop_admin ? ' · Dashboard admin' : ''}
                       </div>
                     </div>
                   </div>
                   <div className="staff-actions">
-                    <Link
-                      href={`/dashboard/staff/${member.id}`}
-                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
-                    >
-                      Calendar
-                    </Link>
+                    {viewerRole === 'owner' && (
+                      <Link
+                        href={`/dashboard/staff/${member.id}`}
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                      >
+                        Calendar
+                      </Link>
+                    )}
                     {member.user_id && ownerUserId && member.user_id === ownerUserId && (
                       <Link
                         href="/staff"

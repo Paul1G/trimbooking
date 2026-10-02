@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { resolveShopRole, ShopRole } from '@/lib/shopAccess'
 import Link from 'next/link'
 import '../tenant.css'
 
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const [serviceCount, setServiceCount] = useState<number | null>(null)
   const [staffCount, setStaffCount] = useState<number | null>(null)
   const [disabled, setDisabled] = useState(false)
+  const [role, setRole] = useState<ShopRole | null>(null)
 
   useEffect(() => {
     async function checkAccess() {
@@ -35,7 +37,8 @@ export default function DashboardPage() {
         .eq('subdomain', params.subdomain)
         .single()
 
-      if (!tenantData || tenantData.owner_id !== user.id) {
+      const shopRole = tenantData ? await resolveShopRole(supabase, tenantData, user.id) : null
+      if (!tenantData || !shopRole) {
         router.push('/login')
         return
       }
@@ -48,6 +51,7 @@ export default function DashboardPage() {
       }
 
       setTenant(tenantData)
+      setRole(shopRole)
       setChecking(false)
 
       const [{ count: services }, { count: staff }] = await Promise.all([
@@ -167,16 +171,25 @@ export default function DashboardPage() {
             <div className="settings-tile-title">Branding</div>
             <div className="settings-tile-sub">Set your logo and brand color</div>
           </Link>
-          <Link href="/dashboard/billing" className="settings-tile">
-            <div className="settings-tile-icon">💳</div>
-            <div className="settings-tile-title">Billing</div>
-            <div className="settings-tile-sub">Invoice or automatic monthly billing</div>
-          </Link>
+          {role === 'owner' && (
+            <Link href="/dashboard/billing" className="settings-tile">
+              <div className="settings-tile-icon">💳</div>
+              <div className="settings-tile-title">Billing</div>
+              <div className="settings-tile-sub">Invoice or automatic monthly billing</div>
+            </Link>
+          )}
           <Link href="/dashboard/no-show-protection" className="settings-tile">
             <div className="settings-tile-icon">🛡️</div>
             <div className="settings-tile-title">No-show protection</div>
             <div className="settings-tile-sub">Save a card and charge a fee for no-shows</div>
           </Link>
+          {role === 'admin' && (
+            <Link href="/staff" className="settings-tile">
+              <div className="settings-tile-icon">💰</div>
+              <div className="settings-tile-title">My earnings</div>
+              <div className="settings-tile-sub">Your own bookings and recorded payments</div>
+            </Link>
+          )}
         </div>
 
         <button

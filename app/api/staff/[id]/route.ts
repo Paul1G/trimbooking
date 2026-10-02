@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { resolveShopRole } from '@/lib/shopAccess'
 
 // Deleting a staff member should fully cut off their access — not just hide
 // them from the dashboard. Removing only the `staff` row would leave their
@@ -37,7 +38,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     .eq('id', staff.tenant_id)
     .maybeSingle()
 
-  if (!tenant || tenant.owner_id !== userData.user.id) {
+  if (!tenant || !(await resolveShopRole(supabaseAdmin, tenant, userData.user.id))) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 

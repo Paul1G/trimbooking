@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { resolveShopRole } from '@/lib/shopAccess'
 import { sendStaffPortalEmail } from '@/lib/email'
 
-// Sends (or resends) a staff member their portal login link. Only the shop's
-// owner can trigger this for their own staff — verified via the bearer token
-// and the tenant's owner_id, mirroring the pattern used for admin routes.
+// Sends (or resends) a staff member their portal login link. The shop's
+// owner, or a staff member promoted to dashboard admin, can trigger this for
+// their own shop's staff — verified via the bearer token and resolveShopRole,
+// mirroring the pattern used for admin routes.
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization') || ''
   const token = authHeader.replace(/^Bearer\s+/i, '').trim()
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     .eq('id', staff.tenant_id)
     .maybeSingle()
 
-  if (!tenant || tenant.owner_id !== userData.user.id) {
+  if (!tenant || !(await resolveShopRole(supabaseAdmin, tenant, userData.user.id))) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
