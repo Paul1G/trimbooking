@@ -131,60 +131,51 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="card-list">
-          <Link href="/dashboard/services" className="card">
-            <div>
-              <div className="card-title">Services</div>
-              <div className="card-sub">Manage what you offer</div>
-            </div>
+        <div className="settings-grid">
+          <Link href="/dashboard/services" className="settings-tile">
+            <div className="settings-tile-icon">🧾</div>
+            <div className="settings-tile-title">Services</div>
+            <div className="settings-tile-sub">Manage what you offer</div>
           </Link>
-          <Link href="/dashboard/staff" className="card">
-            <div>
-              <div className="card-title">Staff</div>
-              <div className="card-sub">Manage your team</div>
-            </div>
+          <Link href="/dashboard/staff" className="settings-tile">
+            <div className="settings-tile-icon">👥</div>
+            <div className="settings-tile-title">Staff</div>
+            <div className="settings-tile-sub">Manage your team</div>
           </Link>
-          <Link href="/dashboard/bookings" className="card">
-            <div>
-              <div className="card-title">Bookings</div>
-              <div className="card-sub">View and manage appointments</div>
-            </div>
+          <Link href="/dashboard/bookings" className="settings-tile">
+            <div className="settings-tile-icon">📅</div>
+            <div className="settings-tile-title">Bookings</div>
+            <div className="settings-tile-sub">View and manage appointments</div>
           </Link>
-          <Link href="/dashboard/customers" className="card">
-            <div>
-              <div className="card-title">Customers</div>
-              <div className="card-sub">Visit history and who&apos;s due to rebook</div>
-            </div>
+          <Link href="/dashboard/customers" className="settings-tile">
+            <div className="settings-tile-icon">🙋</div>
+            <div className="settings-tile-title">Customers</div>
+            <div className="settings-tile-sub">Visit history and who&apos;s due to rebook</div>
           </Link>
-          <Link href="/dashboard/hours" className="card">
-            <div>
-              <div className="card-title">Opening Hours</div>
-              <div className="card-sub">Set your shop's opening days and times</div>
-            </div>
+          <Link href="/dashboard/hours" className="settings-tile">
+            <div className="settings-tile-icon">🕐</div>
+            <div className="settings-tile-title">Opening Hours</div>
+            <div className="settings-tile-sub">Set your shop&apos;s opening days and times</div>
           </Link>
-          <Link href="/dashboard/holidays" className="card">
-            <div>
-              <div className="card-title">Holidays &amp; Closures</div>
-              <div className="card-sub">Block out staff holidays or shop-wide closures</div>
-            </div>
+          <Link href="/dashboard/holidays" className="settings-tile">
+            <div className="settings-tile-icon">🏖️</div>
+            <div className="settings-tile-title">Holidays &amp; Closures</div>
+            <div className="settings-tile-sub">Block out staff holidays or shop-wide closures</div>
           </Link>
-          <Link href="/dashboard/branding" className="card">
-            <div>
-              <div className="card-title">Branding</div>
-              <div className="card-sub">Set your logo and brand color</div>
-            </div>
+          <Link href="/dashboard/branding" className="settings-tile">
+            <div className="settings-tile-icon">🎨</div>
+            <div className="settings-tile-title">Branding</div>
+            <div className="settings-tile-sub">Set your logo and brand color</div>
           </Link>
-          <Link href="/dashboard/billing" className="card">
-            <div>
-              <div className="card-title">Billing</div>
-              <div className="card-sub">Pay by invoice or switch to automatic monthly billing</div>
-            </div>
+          <Link href="/dashboard/billing" className="settings-tile">
+            <div className="settings-tile-icon">💳</div>
+            <div className="settings-tile-title">Billing</div>
+            <div className="settings-tile-sub">Invoice or automatic monthly billing</div>
           </Link>
-          <Link href="/dashboard/no-show-protection" className="card">
-            <div>
-              <div className="card-title">No-show protection</div>
-              <div className="card-sub">Save a card at booking time and charge a fee for no-shows</div>
-            </div>
+          <Link href="/dashboard/no-show-protection" className="settings-tile">
+            <div className="settings-tile-icon">🛡️</div>
+            <div className="settings-tile-title">No-show protection</div>
+            <div className="settings-tile-sub">Save a card and charge a fee for no-shows</div>
           </Link>
         </div>
 
