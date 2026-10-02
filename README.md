@@ -46,6 +46,8 @@ Requires `STRIPE_SECRET_KEY` in the environment, plus `NEXT_PUBLIC_STRIPE_PUBLIS
 
 Stripe Connect must also be enabled on the platform's Stripe account for Stage 1 to work. All of the above runs happily without any of these set — platform billing just falls back to its old behaviour (an invoice record + email with no pay link yet).
 
+Card data itself is never handled by TrimBooking's own code — see [SECURITY.md](./SECURITY.md) for how this keeps TrimBooking at the lightest PCI DSS tier (SAQ A), plus the account-security policy and incident response plan.
+
 ## Getting started
 
 ```bash
