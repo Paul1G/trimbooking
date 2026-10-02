@@ -284,24 +284,40 @@ export default function StaffPage() {
   // that added it for why. Requires the staff row to already exist, so it's
   // only offered once a member has been saved at least once.
   async function toggleShopAdmin(member: Staff, nextValue: boolean) {
-    if (!tenantId) return
+    if (!tenantId) {
+      console.error('toggleShopAdmin called before tenantId was set')
+      setShopAdminError('Could not update admin access — please reload the page and try again.')
+      return
+    }
     setSavingShopAdmin(true)
     setShopAdminError('')
 
-    const { error: rpcError } = await supabase.rpc('owner_set_staff_admin', {
-      p_tenant_id: tenantId,
-      p_staff_id: member.id,
-      p_is_admin: nextValue,
-    })
+    // Wrapped in try/catch/finally rather than just checking the returned
+    // `error` field: a network/CORS failure can make supabase-js *throw*
+    // instead of resolving with { error }, which — without this — left
+    // savingShopAdmin stuck true forever (checkbox silently stuck disabled,
+    // no message shown) instead of surfacing anything.
+    try {
+      const { error: rpcError } = await supabase.rpc('owner_set_staff_admin', {
+        p_tenant_id: tenantId,
+        p_staff_id: member.id,
+        p_is_admin: nextValue,
+      })
 
-    setSavingShopAdmin(false)
-    if (rpcError) {
-      setShopAdminError(rpcError.message)
-      return
+      if (rpcError) {
+        console.error('owner_set_staff_admin failed:', rpcError)
+        setShopAdminError(rpcError.message || 'Could not update admin access.')
+        return
+      }
+
+      setIsShopAdmin(nextValue)
+      setStaffList((prev) => prev.map((s) => (s.id === member.id ? { ...s, is_shop_admin: nextValue } : s)))
+    } catch (err) {
+      console.error('owner_set_staff_admin threw:', err)
+      setShopAdminError(err instanceof Error ? err.message : 'Could not update admin access.')
+    } finally {
+      setSavingShopAdmin(false)
     }
-
-    setIsShopAdmin(nextValue)
-    setStaffList((prev) => prev.map((s) => (s.id === member.id ? { ...s, is_shop_admin: nextValue } : s)))
   }
 
   async function deleteStaff(id: string) {
