@@ -239,6 +239,7 @@ export default function ComparePage() {
           {groups.map((g) => (
             <div key={g.title} style={{ marginBottom: "2rem" }}>
               <h3 style={{ marginTop: 0 }}>{g.title}</h3>
+              <p className="compare-scroll-hint">↔ Scroll sideways to see every platform — the feature column stays put.</p>
               <div className="compare-table-wrap">
                 <table className="compare-table">
                   <thead>

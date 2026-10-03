@@ -438,30 +438,46 @@
 /* ---------- comparison table (app/compare) ---------- */
 
 .compare-table-wrap {
+  position: relative;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--line);
   border-radius: 12px;
   margin: 0 0 1.5rem;
 }
 
+.compare-scroll-hint {
+  display: none;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
 .compare-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.92rem;
-  min-width: 560px;
+  font-size: 0.82rem;
+  table-layout: fixed;
 }
 
 .compare-table th,
 .compare-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.65rem;
   text-align: left;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
+  overflow-wrap: break-word;
+  width: 120px;
+}
+
+.compare-table th:first-child,
+.compare-table td:first-child {
+  width: 150px;
 }
 
 .compare-table thead th {
   background: var(--bg-soft);
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--muted);
@@ -475,12 +491,46 @@
 .compare-table td.compare-feature {
   font-weight: 600;
   color: var(--ink);
-  white-space: nowrap;
+}
+
+.compare-table th:first-child,
+.compare-table td.compare-feature {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+  box-shadow: 1px 0 0 var(--line);
+}
+
+.compare-table thead th:first-child {
+  background: var(--bg-soft);
+  z-index: 3;
 }
 
 .compare-table th.compare-us,
 .compare-table td.compare-us {
   background: #fff7ed;
+}
+
+@media (max-width: 860px) {
+  .compare-scroll-hint {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .compare-table {
+    font-size: 0.76rem;
+  }
+  .compare-table th,
+  .compare-table td {
+    padding: 0.5rem 0.5rem;
+    width: 100px;
+  }
+  .compare-table th:first-child,
+  .compare-table td:first-child {
+    width: 120px;
+  }
 }
 
 .compare-yes {
