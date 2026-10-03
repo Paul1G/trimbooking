@@ -42,10 +42,16 @@ begin
   delete from staff where tenant_id = v_tenant_id;
   delete from services where tenant_id = v_tenant_id;
 
-  -- Shop setup — open Mon–Sat, comped as a demo account.
+  -- Shop setup — open Mon–Sat, comped as a demo account. Also give it a
+  -- proper brand colour: every CSS "--brand" accent (insights bars, the
+  -- heatmap, calendar highlights, buttons) reads straight from this column,
+  -- and a shop signed up the normal way defaults to near-black (#111111)
+  -- until the owner visits Branding — which made everything that leans on
+  -- --brand look washed-out/greyscale for this demo account.
   update tenants
   set
     comped = true,
+    brand_color = '#1d3557',
     opening_hours = '{
       "mon": ["09:00", "18:00"],
       "tue": ["09:00", "18:00"],

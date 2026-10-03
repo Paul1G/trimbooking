@@ -25,13 +25,19 @@ function money(n: number): string {
   return `£${n.toFixed(2)}`
 }
 
+// Same palette and shape as the owner's Bookings calendar (dashboard/bookings)
+// — that's the preferred look, so this page matches it exactly rather than
+// keeping its own slightly different one.
 function statusColors(status: string) {
-  if (status === 'pending') return { bg: '#fef9c3', color: '#854d0e' }
-  if (status === 'confirmed') return { bg: '#dcfce7', color: '#166534' }
-  if (status === 'declined') return { bg: '#fee2e2', color: '#991b1b' }
-  if (status === 'cancelled') return { bg: '#f3f4f6', color: '#6b7280' }
-  return { bg: '#f3f4f6', color: '#374151' }
+  if (status === 'pending') return { bg: '#fef9c3', border: '#eab308', text: '#854d0e' }
+  if (status === 'confirmed') return { bg: '#dcfce7', border: '#16a34a', text: '#166534' }
+  if (status === 'declined') return { bg: '#fee2e2', border: '#dc2626', text: '#991b1b' }
+  return { bg: '#f3f4f6', border: '#9ca3af', text: '#374151' }
 }
+
+const DAY_START_HOUR = 8
+const DAY_END_HOUR = 20
+const PX_PER_HOUR = 60
 
 function startOfWeek(d: Date): Date {
   const date = new Date(d)
@@ -297,30 +303,117 @@ export default function StaffCalendarPage() {
     return d
   })
 
-  function bookingCard(b: Booking) {
-    const colors = statusColors(b.status)
-    const time = new Date(b.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const hours = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR }, (_, i) => DAY_START_HOUR + i)
+
+  function bookingStyle(b: Booking) {
+    const start = new Date(b.start_time)
+    const end = new Date(b.end_time)
+    const startMins = (start.getHours() - DAY_START_HOUR) * 60 + start.getMinutes()
+    const endMins = (end.getHours() - DAY_START_HOUR) * 60 + end.getMinutes()
+    const top = (startMins / 60) * PX_PER_HOUR
+    const height = Math.max(((endMins - startMins) / 60) * PX_PER_HOUR, 24)
+    return { top, height }
+  }
+
+  // Same grid — hour column + day column(s) with time-positioned, colour-coded
+  // blocks — as the owner's Bookings calendar, just scoped to this one staff
+  // member's bookings instead of the whole shop's.
+  function calendarGrid(days: Date[], bookingsSource: Booking[]) {
+    const now = new Date()
+    function bookingsForDay(day: Date) {
+      return bookingsSource.filter((b) => {
+        const bd = new Date(b.start_time)
+        return (
+          bd.getFullYear() === day.getFullYear() &&
+          bd.getMonth() === day.getMonth() &&
+          bd.getDate() === day.getDate() &&
+          b.status !== 'declined' &&
+          b.status !== 'cancelled'
+        )
+      })
+    }
+
     return (
-      <div key={b.id} onClick={() => selectBooking(b)} className="card" style={{ cursor: 'pointer', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 200px' }}>
-          <div className="card-title">{time} · {b.customer_name}</div>
-          <div className="card-sub">{b.service_name}</div>
+      <div style={{ display: 'flex', border: '1px solid #e8e8e8', borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
+        <div style={{ width: 50, flexShrink: 0, borderRight: '1px solid #eee' }}>
+          <div style={{ height: 36, borderBottom: '1px solid #eee' }} />
+          {hours.map((h) => (
+            <div key={h} style={{ height: PX_PER_HOUR, fontSize: '0.7rem', color: '#999', textAlign: 'right', paddingRight: 6, borderBottom: '1px solid #f3f3f3', boxSizing: 'border-box' }}>
+              {h}:00
+            </div>
+          ))}
         </div>
-        <span
-          style={{
-            fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
-            textTransform: 'capitalize', background: colors.bg, color: colors.color,
-          }}
-        >
-          {b.status}
-        </span>
+
+        {days.map((day, i) => {
+          const isToday = day.toDateString() === now.toDateString()
+          return (
+            <div key={i} style={{ flex: 1, position: 'relative', borderRight: i < days.length - 1 ? '1px solid #eee' : 'none', minWidth: 90 }}>
+              <div
+                style={{
+                  height: 36,
+                  borderBottom: '1px solid #eee',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: isToday ? '#f8f4ff' : '#fafafa',
+                  color: isToday ? 'var(--brand)' : '#666',
+                }}
+              >
+                <span>{day.toLocaleDateString('en-GB', { weekday: 'short' })}</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 400 }}>{day.getDate()}</span>
+              </div>
+              <div style={{ position: 'relative', height: hours.length * PX_PER_HOUR }}>
+                {hours.map((h) => (
+                  <div key={h} style={{ height: PX_PER_HOUR, borderBottom: '1px solid #f3f3f3', boxSizing: 'border-box' }} />
+                ))}
+                {bookingsForDay(day).map((b) => {
+                  const { top, height } = bookingStyle(b)
+                  const colors = statusColors(b.status)
+                  return (
+                    <div
+                      key={b.id}
+                      onClick={() => selectBooking(b)}
+                      title={`${b.customer_name} — ${b.service_name}`}
+                      style={{
+                        position: 'absolute',
+                        top,
+                        height,
+                        left: 3,
+                        right: 3,
+                        background: colors.bg,
+                        borderLeft: `3px solid ${colors.border}`,
+                        borderRadius: 4,
+                        padding: '2px 5px',
+                        fontSize: '0.68rem',
+                        color: colors.text,
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                        {b.customer_name}
+                      </div>
+                      <div style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                        {b.service_name}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     )
   }
 
   return (
     <div className="tenant-app" style={{ ['--brand' as any]: brandColor }}>
-      <div className="tenant-container">
+      <div className="tenant-container" style={{ maxWidth: 960 }}>
         <Link href="/dashboard/staff" className="back-link">← Back to staff</Link>
 
         <div className="tenant-hero" style={{ textAlign: 'left', marginTop: '1rem' }}>
@@ -416,9 +509,11 @@ export default function StaffCalendarPage() {
             )}
             {!loadingDay && !dayError && dayBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this day.</p>}
 
-            <div className="card-list">
-              {dayBookings.map((b) => bookingCard(b))}
-            </div>
+            {!loadingDay && !dayError && dayBookings.length > 0 && (
+              <div style={{ marginTop: '1rem' }}>
+                {calendarGrid([new Date(selectedDate + 'T00:00:00')], dayBookings)}
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -452,32 +547,7 @@ export default function StaffCalendarPage() {
             )}
             {!loadingWeek && !weekError && weekBookings.length === 0 && <p style={{ color: '#666' }}>No bookings this week.</p>}
 
-            {!loadingWeek && weekDays.map((day) => {
-              const dStr = toDateStr(day)
-              const isToday = toDateStr(new Date()) === dStr
-              const dayBookingsForDay = weekBookings
-                .filter((b) => toDateStr(new Date(b.start_time)) === dStr)
-                .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-
-              if (dayBookingsForDay.length === 0) return null
-
-              return (
-                <div key={dStr} style={{ marginBottom: '1.5rem' }}>
-                  <div
-                    style={{
-                      fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem',
-                      color: isToday ? 'var(--brand)' : 'inherit',
-                    }}
-                  >
-                    {day.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    {isToday ? ' · Today' : ''}
-                  </div>
-                  <div className="card-list">
-                    {dayBookingsForDay.map((b) => bookingCard(b))}
-                  </div>
-                </div>
-              )
-            })}
+            {!loadingWeek && !weekError && weekBookings.length > 0 && calendarGrid(weekDays, weekBookings)}
           </>
         )}
 
@@ -506,7 +576,7 @@ export default function StaffCalendarPage() {
                   display: 'inline-block', fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: 999,
                   textTransform: 'capitalize', margin: '0.5rem 0 0',
                   background: statusColors(selected.status).bg,
-                  color: statusColors(selected.status).color,
+                  color: statusColors(selected.status).text,
                 }}
               >
                 {selected.status}
