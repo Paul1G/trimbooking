@@ -34,6 +34,10 @@ export type StaffSchedule = {
   name: string
   working_hours: Record<string, [string, string]> | null
   breaks: Record<string, [string, string][]> | null
+  // Only present on the shop-wide load (loadShopInsights) — an owner is
+  // allowed to see an employed team member's earnings (same gating as
+  // owner_get_staff_bookings), but never a self-employed one's.
+  employment_status?: 'self_employed' | 'employed' | null
 }
 
 export type HolidayRow = { staff_id: string | null; start_date: string; end_date: string }
@@ -550,6 +554,8 @@ export type StaffRow = {
   bookedHours: number
   utilisation: number | null
   clients: number
+  revenue: number
+  employed: boolean
 }
 
 export function perStaff(
@@ -570,6 +576,8 @@ export function perStaff(
         bookedHours: sum.bookedMins / 60,
         utilisation: sum.utilisation,
         clients: sum.clients,
+        revenue: sum.revenue,
+        employed: s.employment_status === 'employed',
       }
     })
     .sort((a, b) => b.visits - a.visits)

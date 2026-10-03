@@ -51,7 +51,7 @@ export async function loadShopInsights(
         .order('id', { ascending: true })
         .range(from, to)
     ),
-    supabase.from('staff').select('id, name, working_hours, breaks').eq('tenant_id', tenant.id).order('name'),
+    supabase.from('staff').select('id, name, working_hours, breaks, employment_status').eq('tenant_id', tenant.id).order('name'),
     supabase.from('staff_holidays').select('staff_id, start_date, end_date').eq('tenant_id', tenant.id),
   ])
 

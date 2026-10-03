@@ -212,6 +212,7 @@ export default function InsightsView({
                   <th className="num">Hours booked</th>
                   <th className="num">Utilisation</th>
                   <th className="num">Clients</th>
+                  {showMoney && <th className="num">Revenue</th>}
                 </tr>
               </thead>
               <tbody>
@@ -229,12 +230,21 @@ export default function InsightsView({
                       )}
                     </td>
                     <td className="num">{r.clients}</td>
+                    {/* An employed team member's earnings are the shop's own
+                       money, same as their schedule is visible to the owner
+                       elsewhere — a self-employed one's stay private to their
+                       own portal. */}
+                    {showMoney && <td className="num strong">{r.employed ? money(r.revenue) : '—'}</td>}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="insights-caption">Earnings per person stay private to each team member&apos;s own portal.</p>
+          <p className="insights-caption">
+            {showMoney
+              ? 'Revenue is shown for employed team members only — self-employed team members’ earnings stay private to their own portal.'
+              : 'Earnings per person stay private to each team member’s own portal.'}
+          </p>
         </section>
       )}
 
