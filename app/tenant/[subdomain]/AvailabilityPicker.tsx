@@ -36,7 +36,8 @@ export default function AvailabilityPicker({
   durationMinutes,
   shopOpeningHours,
   initialDate,
-  excludeStartTime,
+  excludeBookingId,
+  contactWindows,
   onSelect,
 }: {
   tenantId: string
@@ -44,7 +45,12 @@ export default function AvailabilityPicker({
   durationMinutes: number
   shopOpeningHours: WorkingHours
   initialDate?: Date
-  excludeStartTime?: string
+  excludeBookingId?: string
+  // [start_minute, end_minute] pairs for the service being booked, when it
+  // allows parallel treatment — see services.contact_windows. Only these
+  // windows of the new booking need to be free; leave unset for an ordinary
+  // service, which needs its whole duration free.
+  contactWindows?: [number, number][]
   onSelect: (selection: { date: string; slot: string } | null) => void
 }) {
   const startingDate = useMemo(() => {
@@ -80,19 +86,18 @@ export default function AvailabilityPicker({
       rangeEnd.setDate(rangeEnd.getDate() + 6)
       rangeEnd.setHours(23, 59, 59, 999)
 
-      const { data: existingBookingsRaw } = await supabase
-        .from('available_slots')
-        .select('start_time, end_time')
-        .eq('staff_id', staff.id)
-        .gte('start_time', rangeStart.toISOString())
-        .lte('start_time', rangeEnd.toISOString())
-        .neq('status', 'cancelled')
-
-      // When rescheduling, the booking's own current slot still shows up here
-      // (it hasn't moved yet) — drop it so the customer can keep their existing time.
-      const existingBookings = (existingBookingsRaw || []).filter(
-        (b) => !excludeStartTime || b.start_time !== excludeStartTime
-      )
+      // Contact segments (not full booking spans) for every one of this
+      // staff member's live bookings in the week — a parallel-treatment
+      // service's non-contact time is correctly left open for someone else.
+      // p_exclude_booking_id drops the booking being rescheduled (it hasn't
+      // moved yet) so the customer can keep their existing time.
+      const { data: existingBookings } = await supabase.rpc('get_staff_contact_windows', {
+        p_tenant_id: tenantId,
+        p_staff_id: staff.id,
+        p_range_start: rangeStart.toISOString(),
+        p_range_end: rangeEnd.toISOString(),
+        p_exclude_booking_id: excludeBookingId || null,
+      })
 
       const { data: staffHolidays } = await supabase
         .from('staff_holidays')
@@ -105,6 +110,13 @@ export default function AvailabilityPicker({
         .is('staff_id', null)
         .eq('tenant_id', tenantId)
 
+      const blockerSegments = (existingBookings || []).map(
+        (seg: { segment_start: string; segment_end: string }) => ({
+          start_time: seg.segment_start,
+          end_time: seg.segment_end,
+        })
+      )
+
       const nextDaySlots: Record<string, string[]> = {}
       for (const day of weekDays) {
         if (isPastDay(day)) {
@@ -116,10 +128,11 @@ export default function AvailabilityPicker({
           staff.working_hours,
           shopOpeningHours || {},
           durationMinutes,
-          existingBookings || [],
+          blockerSegments,
           staffHolidays || [],
           shopHolidays || [],
-          staff.breaks || {}
+          staff.breaks || {},
+          contactWindows
         )
       }
       setDaySlots(nextDaySlots)
@@ -129,7 +142,7 @@ export default function AvailabilityPicker({
     }
     loadWeek()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [staff.id, weekStart, durationMinutes, excludeStartTime])
+  }, [staff.id, weekStart, durationMinutes, excludeBookingId, JSON.stringify(contactWindows)])
 
   function goPrevWeek() {
     if (!canGoPrevWeek) return

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import AvailabilityPicker, { WorkingHours, BreakWindows } from '../../AvailabilityPicker'
 
@@ -55,6 +55,29 @@ export default function ManageBookingClient({
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [contactWindows, setContactWindows] = useState<[number, number][] | undefined>(undefined)
+
+  // manage_get_booking returns the service's name/duration/price for display,
+  // but not its parallel-treatment config — fetched separately here (the
+  // services table is already anon-readable, same as on the public booking
+  // page) so a reschedule respects the same contact windows as a new booking.
+  useEffect(() => {
+    async function loadParallelConfig() {
+      if (!booking.services) return
+      const { data } = await supabase
+        .from('services')
+        .select('allow_parallel, contact_windows')
+        .eq('id', booking.services.id)
+        .single()
+      if (data?.allow_parallel && data.contact_windows) {
+        setContactWindows(data.contact_windows)
+      } else {
+        setContactWindows(undefined)
+      }
+    }
+    loadParallelConfig()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking.services?.id])
 
   const isPast = new Date(booking.start_time) < new Date()
   const isCancelled = booking.status === 'cancelled'
@@ -221,7 +244,8 @@ export default function ManageBookingClient({
             durationMinutes={booking.services.duration_minutes}
             shopOpeningHours={shopOpeningHours}
             initialDate={new Date(booking.start_time)}
-            excludeStartTime={booking.start_time}
+            excludeBookingId={booking.id}
+            contactWindows={contactWindows}
             onSelect={setSelection}
           />
 

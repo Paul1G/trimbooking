@@ -39,7 +39,15 @@ export function getSlotsForDay(
   existingBookings: { start_time: string; end_time: string }[],
   staffHolidays: HolidayRange[] = [],
   shopHolidays: HolidayRange[] = [],
-  staffBreaks: BreakWindows = {}
+  staffBreaks: BreakWindows = {},
+  // [start_minute, end_minute] pairs, relative to the candidate booking's own
+  // start, for the service being booked. When set (a parallel-treatment
+  // service), only these windows of the candidate need to be free of other
+  // bookings/breaks — the rest of its duration can overlap another
+  // customer's appointment with the same staff member. Omit/empty for an
+  // ordinary service, which needs its whole span free, same as before this
+  // existed.
+  contactWindows?: [number, number][]
 ): string[] {
   if (isClosedByHoliday(date, staffHolidays) || isClosedByHoliday(date, shopHolidays)) {
     return []
@@ -83,6 +91,12 @@ export function getSlotsForDay(
 
   const blockers = [...existingBookings, ...breaksToday]
 
+  // The segments of the candidate booking that actually need the staff
+  // member free, relative to its own start. An ordinary service (or a
+  // parallel one with no windows configured) is just its whole duration.
+  const ownWindows: [number, number][] =
+    contactWindows && contactWindows.length > 0 ? contactWindows : [[0, durationMinutes]]
+
   const slots: string[] = []
   const slotLength = 15
 
@@ -92,12 +106,15 @@ export function getSlotsForDay(
     t.setMinutes(t.getMinutes() + slotLength)
   ) {
     const slotStart = new Date(t)
-    const slotEnd = new Date(t.getTime() + durationMinutes * 60000)
 
-    const overlaps = blockers.some((b) => {
-      const bStart = new Date(b.start_time)
-      const bEnd = new Date(b.end_time)
-      return slotStart < bEnd && slotEnd > bStart
+    const overlaps = ownWindows.some(([winStart, winEnd]) => {
+      const segStart = new Date(slotStart.getTime() + winStart * 60000)
+      const segEnd = new Date(slotStart.getTime() + winEnd * 60000)
+      return blockers.some((b) => {
+        const bStart = new Date(b.start_time)
+        const bEnd = new Date(b.end_time)
+        return segStart < bEnd && segEnd > bStart
+      })
     })
 
     if (!overlaps) {

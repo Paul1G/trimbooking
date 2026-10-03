@@ -89,7 +89,14 @@ type Staff = {
   breaks?: BreakWindows | null
   auto_confirm_bookings?: boolean | null
 }
-type Service = { id: string; name: string; duration_minutes: number; price: number }
+type Service = {
+  id: string
+  name: string
+  duration_minutes: number
+  price: number
+  allow_parallel?: boolean | null
+  contact_windows?: [number, number][] | null
+}
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -424,6 +431,7 @@ export default function BookingForm({
           staff={selectedStaff}
           durationMinutes={service.duration_minutes}
           shopOpeningHours={shopOpeningHours}
+          contactWindows={service.allow_parallel ? service.contact_windows || undefined : undefined}
           onSelect={setSelection}
         />
       )}
