@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
+import InsightsView from '../tenant/[subdomain]/InsightsView'
+import { buildDemoInsights } from '@/lib/demoInsights'
 import '../home.css'
 import '../tenant/[subdomain]/tenant.css'
 
@@ -73,6 +75,14 @@ export default function DemoDashboardPage() {
   const [billingMethod, setBillingMethod] = useState<'invoice' | 'subscription'>('invoice')
   const [noShowProtection, setNoShowProtection] = useState(true)
   const [noShowMessage, setNoShowMessage] = useState<string | null>(null)
+  // Built after mount, not during the static build, so the dates match the
+  // visitor's own "today" and there's no server/client mismatch.
+  const onClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
+  const insights = useMemo(() => (onClient ? buildDemoInsights() : null), [onClient])
 
   function setStatus(id: string, status: BookingStatus) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)))
@@ -237,6 +247,25 @@ export default function DemoDashboardPage() {
                 </div>
               )
             })}
+          </div>
+
+          <h3 id="insights" className="section-title" style={{ scrollMarginTop: '5rem' }}>📈 Insights</h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
+            How the shop is doing — switch between this week, last month and this tax year, tap the
+            chart and the heatmap. Sample data, just for show.
+          </p>
+          <div style={{ marginBottom: '1.75rem' }}>
+            {insights ? (
+              <InsightsView
+                bookings={insights.bookings}
+                capacity={insights.capacity}
+                showMoney
+                showContacts
+                showStaffTable
+              />
+            ) : (
+              <p className="card-sub">Loading sample insights…</p>
+            )}
           </div>
 
           <h3 className="section-title">Billing &amp; no-show protection</h3>

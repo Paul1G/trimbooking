@@ -8,10 +8,11 @@ const sections = [
   { id: "staff", title: "4. Adding staff" },
   { id: "staff-portal", title: "5. Staff logins & the staff portal" },
   { id: "bookings", title: "6. Managing bookings" },
-  { id: "customer-booking", title: "7. How customers book & manage appointments" },
-  { id: "billing", title: "8. Billing & no-show protection" },
-  { id: "account", title: "9. Your account, login & passwords" },
-  { id: "faq", title: "10. Frequently asked questions" },
+  { id: "insights", title: "7. Insights" },
+  { id: "customer-booking", title: "8. How customers book & manage appointments" },
+  { id: "billing", title: "9. Billing & no-show protection" },
+  { id: "account", title: "10. Your account, login & passwords" },
+  { id: "faq", title: "11. Frequently asked questions" },
 ];
 
 export default function GuidePage() {
@@ -185,6 +186,14 @@ export default function GuidePage() {
             expired), and you can remove a staff member&apos;s access entirely by
             deleting them from the Staff page.
           </p>
+          <h3>My insights</h3>
+          <p>
+            Staff members have a <strong>My insights</strong> link in their portal.
+            It&apos;s the same Insights view (see section 7) built only from their
+            own bookings: their takings, best week, top clients, regulars they
+            haven&apos;t seen in 3 months and their busy and quiet times. Only they
+            can see it.
+          </p>
           <h3>Getting paid directly (Stripe)</h3>
           <p>
             From their own portal, a staff member can click <strong>Set up
@@ -239,8 +248,57 @@ export default function GuidePage() {
           </p>
         </section>
 
+        <section id="insights" className="doc-section">
+          <h2>7. Insights</h2>
+          <p>
+            Open <strong>Insights</strong> from your dashboard to see how the
+            business is doing. Pick a period at the top:
+          </p>
+          <ul>
+            <li><strong>This week</strong> — Monday to now, compared with the same point last week.</li>
+            <li><strong>Last month</strong> — the whole of last month, compared with the same month last year.</li>
+            <li><strong>This tax year</strong> — from 6 April to now, compared with the same point in the previous tax year.</li>
+          </ul>
+          <p>For that period you&apos;ll see, each with a ▲ or ▼ against the comparison:</p>
+          <ul>
+            <li><strong>Revenue</strong> — what was recorded as paid, or the service price where nothing different was entered.</li>
+            <li><strong>Appointments</strong> — visits that went ahead (no-shows and cancellations aren&apos;t counted).</li>
+            <li><strong>Utilisation</strong> — how much of your bookable time was booked. Bookable time comes from your opening hours and each staff member&apos;s hours, minus breaks and holidays, so set those up for this to be accurate.</li>
+            <li><strong>Average spend</strong>, <strong>clients</strong> (and how many were new), and <strong>no-shows</strong> and cancellations.</li>
+          </ul>
+          <h3>Week on week</h3>
+          <p>
+            A chart of the last 12 weeks, this week so far against the same point
+            last week, and your <strong>best week</strong> of the last 12 months.
+            Tap any bar to see that week&apos;s figures.
+          </p>
+          <h3>Busy and quiet times</h3>
+          <p>
+            A grid of every day and hour, shaded by how full it is over the last
+            12 weeks, with short pointers — your busiest and quietest days, the
+            slots that are nearly always full, and the quiet ones that might suit
+            an off-peak offer. Tap a square for its details.
+          </p>
+          <h3>Top 10 spenders and clients you haven&apos;t seen</h3>
+          <p>
+            <strong>Top 10 spenders</strong> lists your most valuable clients this
+            tax year. <strong>Not seen in 3 months</strong> lists clients whose last
+            visit was over 3 months ago and who have nothing booked, most valuable
+            first, with buttons to call or email them.
+          </p>
+          <h3>By team member, and who sees what</h3>
+          <p>
+            If you have more than one staff member, a table shows each
+            person&apos;s appointments, hours booked, utilisation and clients.
+            Money figures on the Insights page are shown to the <strong>owner
+            only</strong>; admins see everything else. Individual earnings are
+            never shown per person here — they stay in each staff member&apos;s
+            own portal.
+          </p>
+        </section>
+
         <section id="customer-booking" className="doc-section">
-          <h2>7. How customers book &amp; manage appointments</h2>
+          <h2>8. How customers book &amp; manage appointments</h2>
           <p>
             Customers visit <strong>yourshop.trimbooking.co.uk</strong>, choose a
             service and staff member, then pick from the available times. No
@@ -257,7 +315,7 @@ export default function GuidePage() {
         </section>
 
         <section id="billing" className="doc-section">
-          <h2>8. Billing &amp; no-show protection</h2>
+          <h2>9. Billing &amp; no-show protection</h2>
           <p>
             From <strong>Dashboard &rarr; Billing</strong>, choose how you&apos;d like to
             pay once your free trial ends:
@@ -300,7 +358,7 @@ export default function GuidePage() {
         </section>
 
         <section id="account" className="doc-section">
-          <h2>9. Your account, login &amp; passwords</h2>
+          <h2>10. Your account, login &amp; passwords</h2>
           <p>
             Log in at <strong>yourshop.trimbooking.co.uk/login</strong> with the
             email and password you signed up with. If you&apos;ve forgotten your
@@ -315,7 +373,7 @@ export default function GuidePage() {
         </section>
 
         <section id="faq" className="doc-section">
-          <h2>10. Frequently asked questions</h2>
+          <h2>11. Frequently asked questions</h2>
           <h3>Can I change my business&apos;s web address?</h3>
           <p>Get in touch with TrimBooking support — changing it affects any links you&apos;ve already shared.</p>
           <h3>Can a customer book with any available staff member?</h3>
@@ -324,6 +382,8 @@ export default function GuidePage() {
           <p>Their profile is removed from your booking page and, if they had their own login, that login stops working. Past bookings remain in your records.</p>
           <h3>Do customers need to create an account?</h3>
           <p>No. Customers book with just their name and contact details, and manage their booking via the personal link in their confirmation email.</p>
+          <h3>Why is my utilisation blank or the heatmap empty?</h3>
+          <p>Utilisation needs your opening hours and each staff member&apos;s working hours to be set, so TrimBooking knows how much time was bookable. The busy and quiet view also needs a few weeks of bookings to show a pattern.</p>
           <h3>Is there a cost to try it?</h3>
           <p>
             Every business gets a free 30-day trial with no card required. About

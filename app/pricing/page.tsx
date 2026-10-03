@@ -72,6 +72,7 @@ export default function PricingPage() {
               "Automatic customer emails",
               "Staff logins with their own bookings & earnings",
               "Services, pricing & durations",
+              "Insights: takings, best weeks, top clients & busy times",
             ].map((item) => (
               <li key={item} style={{ fontSize: "0.9rem", display: "flex", gap: "0.5rem" }}>
                 <span style={{ color: "#16a34a" }}>✓</span> {item}

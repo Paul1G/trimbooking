@@ -14,6 +14,10 @@ const industryInsights = [
     quote: "Staff didn't want management seeing their tips or every amount they'd taken.",
     outcome: "Earnings stay private to each staff member, in their own portal — by design.",
   },
+  {
+    quote: "I never really knew which days were quiet, or which regulars had stopped coming in.",
+    outcome: "Insights shows your busy and quiet times, your best weeks, and who you haven't seen in 3 months.",
+  },
 ];
 
 const features = [
@@ -58,6 +62,12 @@ const features = [
     title: "No-show protection",
     description:
       "Turn it on and customers add a card when booking — nothing is charged unless they don't show up. You choose the fee, and staff get paid out directly.",
+  },
+  {
+    icon: "📈",
+    title: "Insights",
+    description:
+      "See takings and how full your diary is this week, last month or this tax year — compared with last week and last year. Spot your best week, your top 10 spenders, clients you haven't seen in 3 months, and your busy and quiet times.",
   },
 ];
 

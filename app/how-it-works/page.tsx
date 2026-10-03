@@ -44,6 +44,12 @@ const features = [
     description:
       "Give team members their own login to see their bookings and earnings, and optionally manage their own schedule and payments.",
   },
+  {
+    icon: "📈",
+    title: "Insights",
+    description:
+      "A dashboard of how the business is doing: takings, appointments and how full the diary is for this week, last month or this tax year, each compared like-for-like with last week or last year.",
+  },
 ];
 
 export default function HowItWorksPage() {
@@ -145,6 +151,46 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      <section className="home-section">
+        <div className="home-eyebrow">Insights</div>
+        <h2 className="home-section-title">Know how the business is really doing</h2>
+        <div className="feature-grid">
+          <div className="feature-card">
+            <div className="feature-icon">📊</div>
+            <h3>This week, last month, this tax year</h3>
+            <p>Revenue, appointments, average spend, new clients, no-shows and utilisation — how much of your bookable time actually got booked. Each one is compared with the same point last week, the same month last year, or the same point last tax year.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🏆</div>
+            <h3>Week on week, and your best week</h3>
+            <p>A chart of the last 12 weeks, this week so far against the same point last week, and your best week of the last 12 months to aim for.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🕐</div>
+            <h3>Busy and quiet times</h3>
+            <p>A day-by-hour heatmap of how full you are, with plain-English pointers — when you&apos;re always full and might need cover, and the quiet slots worth an off-peak offer.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">⭐</div>
+            <h3>Your top 10 spenders</h3>
+            <p>Who your most valuable clients are this tax year — visits, total spent and when they were last in.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">👋</div>
+            <h3>Who you haven&apos;t seen in 3 months</h3>
+            <p>Clients whose last visit was over 3 months ago and who have nothing booked, most valuable first, with one-tap call and email. You decide who to get back in touch with.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">👥</div>
+            <h3>By team member</h3>
+            <p>Appointments, hours booked, utilisation and clients for each person. Takings are shown to the owner only, and each person&apos;s own earnings stay in their portal.</p>
+          </div>
+        </div>
+        <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+          <Link href="/demo-dashboard#insights" className="btn-outline">See it in the demo</Link>
+        </div>
+      </section>
+
       <section className="home-section home-section-soft">
         <div className="home-eyebrow">For your team</div>
         <h2 className="home-section-title">Staff see their own bookings & earnings</h2>
@@ -158,6 +204,11 @@ export default function HowItWorksPage() {
             <div className="feature-icon">💷</div>
             <h3>See what they&apos;ve earned</h3>
             <p>Every staff member can see their own day-by-day and month-to-date earnings totals — nobody else&apos;s, including you. As the owner, you can see and record the price and payment for any single booking, but those running totals stay private to each staff member.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">📈</div>
+            <h3>Their own insights</h3>
+            <p>Each staff member gets their own insights page too — their takings, best week, top clients, regulars they haven&apos;t seen lately, and when their diary is busy or quiet. Only they can see it.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon">⚙️</div>
