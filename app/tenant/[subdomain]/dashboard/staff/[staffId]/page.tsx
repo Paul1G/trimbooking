@@ -19,6 +19,7 @@ type Booking = {
   service_name: string | null
   service_price: number | null
   amount_paid: number | null
+  manage_token: string | null
 }
 
 function money(n: number): string {
@@ -70,6 +71,7 @@ export default function StaffCalendarPage() {
   const staffId = params.staffId as string
 
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [tenantName, setTenantName] = useState('')
   const [brandColor, setBrandColor] = useState('#000000')
   const [staffName, setStaffName] = useState('')
   const [isEmployed, setIsEmployed] = useState(false)
@@ -128,6 +130,7 @@ export default function StaffCalendarPage() {
       }
 
       setTenantId(tenant.id)
+      setTenantName(tenant.name)
       setBrandColor(tenant.brand_color)
       setStaffName(staff.name)
       setIsEmployed(staff.employment_status === 'employed')
@@ -270,6 +273,49 @@ export default function StaffCalendarPage() {
     setSelected(updated)
     setDayBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
     setWeekBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+  }
+
+  // Same Accept/Decline/Cancel behaviour as the owner's Bookings calendar —
+  // this page was missing it entirely, having started life as a read-only
+  // schedule view before earnings/payment editing were added to it.
+  async function updateStatus(id: string, status: string) {
+    if (!tenantId) return
+    const booking = [...dayBookings, ...weekBookings].find((b) => b.id === id)
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status })
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    if (booking && (status === 'confirmed' || status === 'declined' || status === 'cancelled')) {
+      const manageUrl = booking.manage_token
+        ? `https://${params.subdomain}.trimbooking.co.uk/manage/${booking.manage_token}`
+        : undefined
+
+      fetch('/api/send-booking-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: status,
+          tenantName,
+          customerEmail: booking.customer_email,
+          customerName: booking.customer_name,
+          serviceName: booking.service_name,
+          staffName,
+          startTime: booking.start_time,
+          manageUrl,
+        }),
+      }).catch(() => {})
+    }
+
+    setSelected(null)
+    await Promise.all([loadDay(selectedDate), loadWeek(weekStart)])
   }
 
   if (checking) {
@@ -623,7 +669,31 @@ export default function StaffCalendarPage() {
                 excludeBookingId={selected.id}
               />
 
-              <div style={{ marginTop: '1.25rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+                {selected.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => updateStatus(selected.id, 'confirmed')}
+                      style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #16a34a', background: '#16a34a', color: '#fff', cursor: 'pointer' }}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => updateStatus(selected.id, 'declined')}
+                      style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #dc2626', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                    >
+                      Decline
+                    </button>
+                  </>
+                )}
+                {selected.status === 'confirmed' && (
+                  <button
+                    onClick={() => updateStatus(selected.id, 'cancelled')}
+                    style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', color: '#666', cursor: 'pointer' }}
+                  >
+                    Cancel appointment
+                  </button>
+                )}
                 <button
                   onClick={() => setSelected(null)}
                   style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}

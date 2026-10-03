@@ -129,10 +129,11 @@ export default function InsightsView({
 
       <div className="insights-kpis">
         {showMoney && (
-          <Kpi label="Revenue" value={money(current.revenue)} change={pctChange(current.revenue, previous.revenue)} prev={money(previous.revenue)} />
+          <Kpi tone="#16a34a" label="Revenue" value={money(current.revenue)} change={pctChange(current.revenue, previous.revenue)} prev={money(previous.revenue)} />
         )}
-        <Kpi label="Appointments" value={String(current.visits)} change={pctChange(current.visits, previous.visits)} prev={String(previous.visits)} />
+        <Kpi tone="#2563eb" label="Appointments" value={String(current.visits)} change={pctChange(current.visits, previous.visits)} prev={String(previous.visits)} />
         <Kpi
+          tone="#7c3aed"
           label="Utilisation"
           value={current.utilisation == null ? '—' : pct(current.utilisation)}
           sub={current.utilisation == null ? 'Set opening and staff hours' : `${hours(current.bookedMins)} of ${hours(current.capacityMins)} booked`}
@@ -143,9 +144,10 @@ export default function InsightsView({
           prev={previous.utilisation == null ? '—' : pct(previous.utilisation)}
         />
         {showMoney && (
-          <Kpi label="Avg spend" value={money(current.avgSpend, 2)} change={pctChange(current.avgSpend, previous.avgSpend)} prev={money(previous.avgSpend, 2)} />
+          <Kpi tone="#d97706" label="Avg spend" value={money(current.avgSpend, 2)} change={pctChange(current.avgSpend, previous.avgSpend)} prev={money(previous.avgSpend, 2)} />
         )}
         <Kpi
+          tone="#0d9488"
           label="Clients"
           value={String(current.clients)}
           sub={`${current.newClients} new`}
@@ -153,6 +155,7 @@ export default function InsightsView({
           prev={String(previous.clients)}
         />
         <Kpi
+          tone="#e11d48"
           label="No-shows"
           value={String(current.noShows)}
           sub={`${current.cancellations} cancelled`}
@@ -286,6 +289,7 @@ function Kpi({
   prev,
   lowerIsBetter,
   changeIsPoints,
+  tone: toneColor,
 }: {
   label: string
   value: string
@@ -294,6 +298,10 @@ function Kpi({
   prev: string
   lowerIsBetter?: boolean
   changeIsPoints?: boolean
+  // A fixed accent colour for this metric, independent of the shop's own
+  // brand colour — these cards are meant to read as a colourful dashboard,
+  // not as another place the single brand accent shows up.
+  tone?: string
 }) {
   let tone: 'up' | 'down' | 'flat' = 'flat'
   if (change != null && Math.abs(change) >= 0.005) {
@@ -308,9 +316,9 @@ function Kpi({
         ? `${arrow}${change > 0 ? '+' : ''}${Math.abs(Math.round(change * 100))} pts`
         : `${arrow}${change > 0 ? '+' : ''}${Math.abs(Math.round(change * 100))}%`
   return (
-    <div className="insights-kpi">
+    <div className="insights-kpi" style={toneColor ? { borderLeft: `4px solid ${toneColor}` } : undefined}>
       <div className="insights-kpi-label">{label}</div>
-      <div className="insights-kpi-value">{value}</div>
+      <div className="insights-kpi-value" style={toneColor ? { color: toneColor } : undefined}>{value}</div>
       {sub && <div className="insights-kpi-sub">{sub}</div>}
       <div className={`insights-delta ${tone}`}>
         {changeStr}
