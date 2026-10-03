@@ -263,9 +263,16 @@ export function summarise(
   inputs: CapacityInputs,
   now: Date,
   firstVisits: Map<string, number>,
-  staffIds?: Set<string>
+  staffIds?: Set<string>,
+  // When set, only a booking whose staff is in this set contributes to
+  // revenue/avgSpend — a self-employed team member's takings are their own
+  // business, not the shop's, so they're left out of "shop revenue" even
+  // though the appointment itself still counts as diary activity above.
+  // Leave unset to count every booking's money, as before this existed.
+  revenueStaffIds?: Set<string>
 ): Summary {
   let revenue = 0
+  let revenueVisits = 0
   let visits = 0
   let bookedMins = 0
   let noShows = 0
@@ -282,7 +289,10 @@ export function summarise(
     if (isBookedTime(b)) bookedMins += bookedMinutes(b, start, end2)
     if (!isCompletedVisit(b, now)) continue
     visits++
-    revenue += bookingValue(b)
+    if (!revenueStaffIds || (b.staffId && revenueStaffIds.has(b.staffId))) {
+      revenue += bookingValue(b)
+      revenueVisits++
+    }
     if (!clients.has(b.customerKey)) {
       clients.add(b.customerKey)
       const f = firstVisits.get(b.customerKey)
@@ -296,7 +306,7 @@ export function summarise(
     visits,
     clients: clients.size,
     newClients,
-    avgSpend: visits ? revenue / visits : 0,
+    avgSpend: revenueVisits ? revenue / revenueVisits : 0,
     bookedMins,
     capacityMins,
     utilisation: capacityMins > 0 ? Math.min(1, bookedMins / capacityMins) : null,
@@ -315,7 +325,12 @@ export function pctChange(current: number, previous: number): number | null {
 
 export type WeekPoint = { weekStart: Date; revenue: number; visits: number; isCurrent: boolean }
 
-export function weeklySeries(bookings: InsightBooking[], now: Date, weeks: number): WeekPoint[] {
+export function weeklySeries(
+  bookings: InsightBooking[],
+  now: Date,
+  weeks: number,
+  revenueStaffIds?: Set<string>
+): WeekPoint[] {
   const thisWeek = startOfWeek(now)
   const points: WeekPoint[] = []
   for (let i = weeks - 1; i >= 0; i--) {
@@ -330,7 +345,7 @@ export function weeklySeries(bookings: InsightBooking[], now: Date, weeks: numbe
     // still lands in the right bucket.
     const idx = points.findIndex((p) => p.weekStart.getTime() === ws)
     if (idx < 0) continue
-    points[idx].revenue += bookingValue(b)
+    if (!revenueStaffIds || (b.staffId && revenueStaffIds.has(b.staffId))) points[idx].revenue += bookingValue(b)
     points[idx].visits++
   }
   return points
@@ -360,7 +375,13 @@ export type ClientStat = {
   lastVisit: Date | null
 }
 
-function clientStats(bookings: InsightBooking[], now: Date, start?: Date, end?: Date): Map<string, ClientStat> {
+function clientStats(
+  bookings: InsightBooking[],
+  now: Date,
+  start?: Date,
+  end?: Date,
+  revenueStaffIds?: Set<string>
+): Map<string, ClientStat> {
   const map = new Map<string, ClientStat>()
   const sorted = [...bookings].sort((a, b) => a.start.getTime() - b.start.getTime())
   for (const b of sorted) {
@@ -376,7 +397,9 @@ function clientStats(bookings: InsightBooking[], now: Date, start?: Date, end?: 
       lastVisit: null,
     }
     cur.visits++
-    cur.spend += bookingValue(b)
+    // A self-employed team member's takings aren't the shop's revenue, so
+    // they're left out of a client's spend here too — same rule as the KPIs.
+    if (!revenueStaffIds || (b.staffId && revenueStaffIds.has(b.staffId))) cur.spend += bookingValue(b)
     cur.lastVisit = b.start
     // Latest details win, same as the Customers page.
     cur.name = b.customerName || cur.name
@@ -393,9 +416,10 @@ export function topClients(
   end: Date,
   now: Date,
   by: 'spend' | 'visits',
-  n = 10
+  n = 10,
+  revenueStaffIds?: Set<string>
 ): ClientStat[] {
-  return Array.from(clientStats(bookings, now, start, end).values())
+  return Array.from(clientStats(bookings, now, start, end, revenueStaffIds).values())
     .sort((a, b) => (by === 'spend' ? b.spend - a.spend || b.visits - a.visits : b.visits - a.visits || b.spend - a.spend))
     .slice(0, n)
 }
@@ -405,14 +429,19 @@ export type LapsedClient = ClientStat & { daysSince: number }
 // Clients whose last visit was more than `days` ago and who have nothing
 // booked in. Most valuable (lifetime spend, then visits) first — those are
 // the ones worth a call.
-export function lapsedClients(bookings: InsightBooking[], now: Date, days = 90): LapsedClient[] {
+export function lapsedClients(
+  bookings: InsightBooking[],
+  now: Date,
+  days = 90,
+  revenueStaffIds?: Set<string>
+): LapsedClient[] {
   const upcoming = new Set<string>()
   for (const b of bookings) {
     if ((b.status === 'pending' || b.status === 'confirmed') && b.start.getTime() > now.getTime()) upcoming.add(b.customerKey)
   }
   const cutoff = now.getTime() - days * DAY_MS
   const out: LapsedClient[] = []
-  for (const c of clientStats(bookings, now).values()) {
+  for (const c of clientStats(bookings, now, undefined, undefined, revenueStaffIds).values()) {
     if (!c.lastVisit || c.lastVisit.getTime() >= cutoff || upcoming.has(c.key)) continue
     out.push({ ...c, daysSince: Math.floor((now.getTime() - c.lastVisit.getTime()) / DAY_MS) })
   }

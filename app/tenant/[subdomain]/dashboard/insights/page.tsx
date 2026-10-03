@@ -68,6 +68,10 @@ export default function InsightsPage() {
             showContacts
             showStaffTable={data.capacity.staff.length > 1}
             customersHref="/dashboard/customers"
+            // A self-employed team member's takings are their own business,
+            // not the shop's — every £ figure here only counts bookings
+            // handled by someone marked 'employed'.
+            restrictRevenueToEmployed
           />
         )}
       </div>

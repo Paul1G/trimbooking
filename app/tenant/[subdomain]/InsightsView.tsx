@@ -37,6 +37,7 @@ export default function InsightsView({
   showContacts,
   showStaffTable,
   customersHref,
+  restrictRevenueToEmployed,
 }: {
   bookings: InsightBooking[]
   capacity: CapacityInputs
@@ -44,23 +45,37 @@ export default function InsightsView({
   showContacts: boolean
   showStaffTable: boolean
   customersHref?: string
+  // A self-employed team member's takings are their own business, not the
+  // shop's — when set, every £ figure on this page (KPIs, week-on-week,
+  // top clients, lapsed clients) only counts bookings handled by an
+  // 'employed' team member. The appointment/client/utilisation counts next
+  // to them still reflect the whole shop's diary, money aside.
+  restrictRevenueToEmployed?: boolean
 }) {
   const [kind, setKind] = useState<PeriodKind>('week')
   const [now] = useState(() => new Date())
 
+  const revenueStaffIds = useMemo(
+    () =>
+      restrictRevenueToEmployed
+        ? new Set(capacity.staff.filter((s) => s.employment_status === 'employed').map((s) => s.id))
+        : undefined,
+    [restrictRevenueToEmployed, capacity.staff]
+  )
+
   const firstVisits = useMemo(() => firstVisitMap(bookings, now), [bookings, now])
   const period = useMemo(() => getPeriod(kind, now), [kind, now])
   const current = useMemo(
-    () => summarise(bookings, period.start, period.end, capacity, now, firstVisits),
-    [bookings, period, capacity, now, firstVisits]
+    () => summarise(bookings, period.start, period.end, capacity, now, firstVisits, undefined, revenueStaffIds),
+    [bookings, period, capacity, now, firstVisits, revenueStaffIds]
   )
   const previous = useMemo(
-    () => summarise(bookings, period.compareStart, period.compareEnd, capacity, now, firstVisits),
-    [bookings, period, capacity, now, firstVisits]
+    () => summarise(bookings, period.compareStart, period.compareEnd, capacity, now, firstVisits, undefined, revenueStaffIds),
+    [bookings, period, capacity, now, firstVisits, revenueStaffIds]
   )
 
   const metric: 'revenue' | 'visits' = showMoney ? 'revenue' : 'visits'
-  const year = useMemo(() => weeklySeries(bookings, now, 52), [bookings, now])
+  const year = useMemo(() => weeklySeries(bookings, now, 52, revenueStaffIds), [bookings, now, revenueStaffIds])
   const recent = year.slice(-12)
   const best = bestWeek(year, metric)
   const thisWeek = recent[recent.length - 1]
@@ -68,12 +83,12 @@ export default function InsightsView({
   const fullWeeks = recent.slice(0, -1)
   const weekPeriod = useMemo(() => getPeriod('week', now), [now])
   const weekNow = useMemo(
-    () => summarise(bookings, weekPeriod.start, weekPeriod.end, capacity, now, firstVisits),
-    [bookings, weekPeriod, capacity, now, firstVisits]
+    () => summarise(bookings, weekPeriod.start, weekPeriod.end, capacity, now, firstVisits, undefined, revenueStaffIds),
+    [bookings, weekPeriod, capacity, now, firstVisits, revenueStaffIds]
   )
   const weekPrev = useMemo(
-    () => summarise(bookings, weekPeriod.compareStart, weekPeriod.compareEnd, capacity, now, firstVisits),
-    [bookings, weekPeriod, capacity, now, firstVisits]
+    () => summarise(bookings, weekPeriod.compareStart, weekPeriod.compareEnd, capacity, now, firstVisits, undefined, revenueStaffIds),
+    [bookings, weekPeriod, capacity, now, firstVisits, revenueStaffIds]
   )
   const avgWeek = fullWeeks.length ? fullWeeks.reduce((s, p) => s + p[metric], 0) / fullWeeks.length : 0
 
@@ -82,10 +97,10 @@ export default function InsightsView({
 
   const tyStart = taxYearStart(now)
   const top = useMemo(
-    () => topClients(bookings, tyStart, now, now, showMoney ? 'spend' : 'visits'),
-    [bookings, tyStart, now, showMoney]
+    () => topClients(bookings, tyStart, now, now, showMoney ? 'spend' : 'visits', 10, revenueStaffIds),
+    [bookings, tyStart, now, showMoney, revenueStaffIds]
   )
-  const lapsed = useMemo(() => lapsedClients(bookings, now, 90), [bookings, now])
+  const lapsed = useMemo(() => lapsedClients(bookings, now, 90, revenueStaffIds), [bookings, now, revenueStaffIds])
   const staffRows = useMemo(
     () => (showStaffTable ? perStaff(bookings, period.start, period.end, capacity, now, firstVisits) : []),
     [showStaffTable, bookings, period, capacity, now, firstVisits]
@@ -129,7 +144,14 @@ export default function InsightsView({
 
       <div className="insights-kpis">
         {showMoney && (
-          <Kpi tone="#16a34a" label="Revenue" value={money(current.revenue)} change={pctChange(current.revenue, previous.revenue)} prev={money(previous.revenue)} />
+          <Kpi
+            tone="#16a34a"
+            label="Revenue"
+            value={money(current.revenue)}
+            sub={restrictRevenueToEmployed ? 'Employed staff only' : undefined}
+            change={pctChange(current.revenue, previous.revenue)}
+            prev={money(previous.revenue)}
+          />
         )}
         <Kpi tone="#2563eb" label="Appointments" value={String(current.visits)} change={pctChange(current.visits, previous.visits)} prev={String(previous.visits)} />
         <Kpi
@@ -144,7 +166,14 @@ export default function InsightsView({
           prev={previous.utilisation == null ? '—' : pct(previous.utilisation)}
         />
         {showMoney && (
-          <Kpi tone="#d97706" label="Avg spend" value={money(current.avgSpend, 2)} change={pctChange(current.avgSpend, previous.avgSpend)} prev={money(previous.avgSpend, 2)} />
+          <Kpi
+            tone="#d97706"
+            label="Avg spend"
+            value={money(current.avgSpend, 2)}
+            sub={restrictRevenueToEmployed ? 'Employed staff only' : undefined}
+            change={pctChange(current.avgSpend, previous.avgSpend)}
+            prev={money(previous.avgSpend, 2)}
+          />
         )}
         <Kpi
           tone="#0d9488"
@@ -253,6 +282,9 @@ export default function InsightsView({
         <h2 className="insights-h2">
           Top 10 {showMoney ? 'spenders' : 'clients'} · tax year {tyStart.getFullYear()}/{String((tyStart.getFullYear() + 1) % 100).padStart(2, '0')}
         </h2>
+        {restrictRevenueToEmployed && showMoney && (
+          <p className="insights-caption">Spend shown is for employed team members only.</p>
+        )}
         {top.length === 0 ? (
           <p className="insights-caption">No visits yet this tax year.</p>
         ) : (
