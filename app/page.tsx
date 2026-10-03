@@ -124,13 +124,14 @@ export default function Home() {
         </p>
         <div className="home-hero-actions">
           <Link href="/signup" className="btn-dark">Get started free</Link>
-          <Link href="/demo-booking" className="btn-outline">See a demo</Link>
         </div>
-        <p style={{ marginTop: '1.25rem', fontSize: '0.9rem' }}>
-          <Link href="/demo-dashboard" style={{ color: "var(--muted)" }}>
-            Curious what the owner side looks like? Try the dashboard demo →
-          </Link>
+        <p style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+          See it in action
         </p>
+        <div className="home-hero-actions" style={{ marginTop: '0.5rem' }}>
+          <Link href="/demo-booking" className="btn-outline">👤 Customer view demo</Link>
+          <Link href="/demo-dashboard" className="btn-outline">🏠 Owner view demo</Link>
+        </div>
       </header>
 
       <section className="home-section">

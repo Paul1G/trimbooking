@@ -412,7 +412,18 @@ export default function AdminPage() {
               <div key={inv.id} className="admin-shop-card">
                 <div style={{ flex: '1 1 220px' }}>
                   <div className="admin-shop-name">{inv.tenants?.name || 'Unknown shop'}</div>
-                  <div className="admin-shop-sub">{inv.tenants?.subdomain}.trimbooking.co.uk</div>
+                  <div className="admin-shop-sub">
+                    {inv.tenants?.subdomain && (
+                      <a
+                        href={`https://${inv.tenants.subdomain}.trimbooking.co.uk`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'inherit' }}
+                      >
+                        {inv.tenants.subdomain}.trimbooking.co.uk
+                      </a>
+                    )}
+                  </div>
                   <div className="admin-shop-sub">
                     {dateLabel(inv.period_start)} – {dateLabel(inv.period_end)}
                     {inv.is_proration ? ' (part month)' : ''} · {inv.staff_count} staff
@@ -476,7 +487,16 @@ export default function AdminPage() {
             <div key={t.id} className="admin-shop-card">
               <div style={{ flex: '1 1 260px' }}>
                 <div className="admin-shop-name">{t.name}</div>
-                <div className="admin-shop-sub">{t.subdomain}.trimbooking.co.uk</div>
+                <div className="admin-shop-sub">
+                  <a
+                    href={`https://${t.subdomain}.trimbooking.co.uk`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'inherit' }}
+                  >
+                    {t.subdomain}.trimbooking.co.uk
+                  </a>
+                </div>
                 <div className="admin-shop-sub">{t.owner_email || 'no owner account'}</div>
                 {t.stripe_customer_id && (
                   <div className="admin-shop-sub">

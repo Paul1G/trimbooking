@@ -93,7 +93,7 @@ export default function PricingPage() {
               </tr>
             </thead>
             <tbody>
-              {[1, 4, 6, 10].map((n) => (
+              {[4, 6, 10].map((n) => (
                 <tr key={n} style={{ borderBottom: "1px solid var(--line)" }}>
                   <td style={{ padding: "0.5rem 0" }}>{n} staff{n === 4 ? " (or fewer)" : ""}</td>
                   <td style={{ padding: "0.5rem 0", textAlign: "right", fontWeight: 600 }}>
