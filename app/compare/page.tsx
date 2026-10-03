@@ -42,16 +42,16 @@ const groups: Group[] = [
         us: "£20/month",
         revyfy: "£39.99/month",
         fresha: "$19.95/month (USD)",
-        vagaro: "$23.99–30/month (USD)",
-        treatwell: "£0/month",
+        vagaro: "£20/month (UK pricing)",
+        treatwell: "No official monthly fee",
       },
       {
         feature: "Cost for 4 staff (approx.)",
         us: "£20/month",
         revyfy: "£39.99/month",
         fresha: "~$59.80/month (USD)",
-        vagaro: "~$60/month (USD)",
-        treatwell: "£0/month",
+        vagaro: "~£44/month (£20 + 3 extra calendars, billed in USD)",
+        treatwell: "No official monthly fee",
       },
       {
         feature: "Commission per booking",
@@ -59,15 +59,15 @@ const groups: Group[] = [
         revyfy: "None",
         fresha: "20% one-off on new clients, free on repeat",
         vagaro: "None",
-        treatwell: "35% on new clients, free on repeat",
+        treatwell: "35% + VAT on new clients (~42% effective), free on repeat",
       },
       {
         feature: "Payment processing fee",
         us: "Stripe's standard rate",
         revyfy: "Not specified",
         fresha: "2.3–3.3% + $0.20–0.30 per transaction",
-        vagaro: "Not specified",
-        treatwell: "2.5% on online prepayments, +VAT",
+        vagaro: "Not specified for UK — US rate ~2.6% + $0.10",
+        treatwell: "2.5% + VAT online, or 1.1% + 20p + VAT on card machine",
       },
       {
         feature: "AI assistant",
@@ -268,15 +268,22 @@ export default function ComparePage() {
               but it adds up quickly once a team and its extras grow.
             </li>
             <li>
-              <strong>Vagaro</strong> is structurally similar to TrimBooking — a base fee
-              plus a per-extra-staff charge — bundled with US-style payments and
-              marketing tools, priced in US dollars.
+              <strong>Vagaro</strong> actually quotes a genuine UK price —{" "}
+              <strong>£20/month</strong> for one location, close to TrimBooking&apos;s own
+              fee. But that&apos;s only the base plan: extra staff calendars, and most
+              add-ons (website, marketing, payments), are still billed in US dollars, so
+              the real monthly cost for a team of several staff ends up part-GBP,
+              part-USD and moves with the exchange rate.
             </li>
             <li>
               <strong>Treatwell</strong> isn&apos;t really a back-office system at all — no
-              subscription, but a 35% commission on every new client it brings you (free
-              on repeat visits). It&apos;s better thought of as a marketing/lead-generation
-              channel to run alongside a real booking system than a replacement for one.
+              official monthly fee in the UK, but a <strong>35% + VAT commission (≈42%
+              effective)</strong> on every new client it brings you, dropping to 0% on
+              their repeat visits. It&apos;s better thought of as a marketing/lead-generation
+              channel to run alongside a real booking system than a replacement for one —
+              and a few partners have reported an undisclosed software fee in their
+              contract, so it&apos;s worth checking your own agreement rather than assuming
+              it&apos;s free.
             </li>
           </ul>
           <div className="doc-note">
@@ -288,13 +295,16 @@ export default function ComparePage() {
             marketplace exposure, not instead of one.
           </div>
           <p style={{ fontSize: "0.85rem", color: "var(--muted)" }}>
-            Fresha and Vagaro publish their core pricing in US dollars; figures above are
-            their listed $ price, not a currency conversion, so they aren&apos;t directly
-            comparable to the £ figures without accounting for that. Every platform&apos;s
-            pricing and feature set can change at any time — we keep this page updated as
-            we notice changes, but always double-check anything pricing-critical on the
-            provider&apos;s own site before deciding. If you&apos;d like us to add another
-            platform, let us know at{" "}
+            Vagaro&apos;s £20/month base fee is a genuine UK price, but extra staff
+            calendars and most add-ons are still billed in US dollars — so a multi-staff
+            Vagaro bill will move with the GBP/USD exchange rate. Fresha publishes its
+            core pricing in US dollars only; the figures above are its listed $ price, not
+            a currency conversion. Treatwell doesn&apos;t publish a UK subscription fee, so
+            we&apos;ve shown none — some partner agreements reportedly include one, so
+            check your own contract. Every platform&apos;s pricing and feature set can
+            change at any time — we keep this page updated as we notice changes, but
+            always double-check anything pricing-critical on the provider&apos;s own site
+            before deciding. If you&apos;d like us to add another platform, let us know at{" "}
             <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a>.
           </p>
         </section>
