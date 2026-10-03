@@ -1,6 +1,21 @@
 import Link from "next/link";
 import "./home.css";
 
+const industryInsights = [
+  {
+    quote: "Bookings mostly came in by phone or an Instagram DM, in between clients.",
+    outcome: "Your own branded booking page customers can use any time, day or night.",
+  },
+  {
+    quote: "No-shows cost real money, but asking for a deposit felt awkward.",
+    outcome: "No-show protection: a card is held, and only charged if they don't turn up.",
+  },
+  {
+    quote: "Staff didn't want management seeing their tips or every amount they'd taken.",
+    outcome: "Earnings stay private to each staff member, in their own portal — by design.",
+  },
+];
+
 const features = [
   {
     icon: "🔗",
@@ -107,6 +122,24 @@ export default function Home() {
           </Link>
         </p>
       </header>
+
+      <section className="home-section">
+        <div className="home-eyebrow">Built with the industry</div>
+        <h2 className="home-section-title">Shaped by the people who actually run these businesses</h2>
+        <p style={{ textAlign: "center", maxWidth: 640, margin: "-1.25rem auto 2.5rem", color: "var(--muted)" }}>
+          TrimBooking wasn&apos;t designed in a vacuum. Every feature here came out of real conversations
+          with working salon owners, barbers and stylists about what actually slows their day down —
+          it&apos;s built around how this industry runs, not a generic booking tool with a salon skin.
+        </p>
+        <div className="insight-grid">
+          {industryInsights.map((i) => (
+            <div key={i.quote} className="insight-card">
+              <p className="insight-quote">&ldquo;{i.quote}&rdquo;</p>
+              <p className="insight-outcome">→ {i.outcome}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="home-section home-section-soft">
         <div className="home-eyebrow">Everything included</div>
