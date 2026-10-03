@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import '../home.css'
 import './admin.css'
@@ -383,7 +384,12 @@ export default function AdminPage() {
       <div className="admin-wrap">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h1 style={{ margin: 0, fontSize: '1.6rem' }}>{tab === 'shops' ? 'Shops' : 'Invoices'}</h1>
-          <button className="admin-btn" onClick={handleLogout}>Log out</button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Link href="/" className="admin-btn" style={{ textDecoration: 'none', color: 'inherit', display: 'inline-block' }}>
+              Home
+            </Link>
+            <button className="admin-btn" onClick={handleLogout}>Log out</button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
