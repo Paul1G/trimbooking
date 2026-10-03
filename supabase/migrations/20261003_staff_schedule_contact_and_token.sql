@@ -8,7 +8,13 @@
 --
 -- Run this in the Supabase SQL editor.
 
-create or replace function owner_get_staff_schedule(
+-- Both functions' OUT columns (RETURNS TABLE) are changing, not just their
+-- bodies — Postgres won't let create-or-replace change a function's row
+-- type, so the old versions have to be dropped first.
+drop function if exists owner_get_staff_schedule(uuid, uuid, timestamptz, timestamptz);
+drop function if exists owner_get_staff_bookings(uuid, uuid, timestamptz, timestamptz);
+
+create function owner_get_staff_schedule(
   p_tenant_id uuid,
   p_staff_id uuid,
   p_range_start timestamptz,
@@ -67,7 +73,7 @@ $$;
 
 grant execute on function owner_get_staff_schedule(uuid, uuid, timestamptz, timestamptz) to authenticated;
 
-create or replace function owner_get_staff_bookings(
+create function owner_get_staff_bookings(
   p_tenant_id uuid,
   p_staff_id uuid,
   p_range_start timestamptz,
