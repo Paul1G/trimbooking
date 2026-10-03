@@ -34,9 +34,9 @@ const INITIAL_BOOKINGS: Booking[] = [
 ]
 
 const STAFF = [
-  { name: 'Maya Chen', role: 'Senior Stylist' },
-  { name: 'Ade Okafor', role: 'Colour Specialist' },
-  { name: 'Callum Reed', role: 'Barber' },
+  { name: 'Maya Chen', role: 'Senior Stylist', employed: true },
+  { name: 'Ade Okafor', role: 'Colour Specialist', employed: false },
+  { name: 'Callum Reed', role: 'Barber', employed: false },
 ]
 
 // Sample customer history, just for this demo — on a real shop this comes
@@ -230,8 +230,10 @@ export default function DemoDashboardPage() {
           <h3 className="section-title">Your team</h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
             You see each person&apos;s booking schedule — click through for a day or
-            week view. Their running earnings totals stay private, visible only
-            from their own portal.
+            week view. Mark someone <strong>employed</strong> and their earnings show
+            up in your Insights below; leave them <strong>self-employed</strong> (the
+            default, for a staff member renting their own chair) and their running
+            earnings total stays private, visible only from their own portal.
           </p>
           <div className="card-list">
             {STAFF.map((s) => {
@@ -240,8 +242,8 @@ export default function DemoDashboardPage() {
                 <div key={s.name} className="card" style={{ cursor: 'default' }}>
                   <div className="avatar-fallback">{s.name[0]}</div>
                   <div style={{ flex: 1 }}>
-                    <div className="card-title">{s.name}</div>
-                    <div className="card-sub">{s.role}</div>
+                    <div className="card-title">{s.name}{s.employed ? ' · Employed' : ''}</div>
+                    <div className="card-sub">{s.role}{s.employed ? '' : ' · Self-employed'}</div>
                   </div>
                   <div className="card-price">{staffToday.length} booking{staffToday.length === 1 ? '' : 's'} today</div>
                 </div>
@@ -262,6 +264,7 @@ export default function DemoDashboardPage() {
                 showMoney
                 showContacts
                 showStaffTable
+                restrictRevenueToEmployed
               />
             ) : (
               <p className="card-sub">Loading sample insights…</p>

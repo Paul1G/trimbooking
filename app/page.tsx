@@ -69,6 +69,18 @@ const features = [
     description:
       "See takings and how full your diary is this week, last month or this tax year — compared with last week and last year. Spot your best week, your top 10 spenders, clients you haven't seen in 3 months, and your busy and quiet times.",
   },
+  {
+    icon: "⏳",
+    title: "Parallel treatment",
+    description:
+      "For a long service that doesn't need you the whole time — a colour, a perm — mark which minutes actually need your attention. The rest of the appointment opens back up for someone else to book.",
+  },
+  {
+    icon: "🧑‍🤝‍🧑",
+    title: "Employed or self-employed staff",
+    description:
+      "Mark each team member employed or self-employed (chair rental). An employed member's earnings appear in your own Insights revenue; a self-employed member's takings are their own business and stay private to their portal.",
+  },
 ];
 
 const steps = [

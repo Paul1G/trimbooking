@@ -50,6 +50,18 @@ const features = [
     description:
       "A dashboard of how the business is doing: takings, appointments and how full the diary is for this week, last month or this tax year, each compared like-for-like with last week or last year.",
   },
+  {
+    icon: "⏳",
+    title: "Parallel treatment",
+    description:
+      "For a long service that doesn't need you the whole time — a colour, a perm — mark which minutes actually need your attention, and open the rest of the appointment back up for another booking.",
+  },
+  {
+    icon: "🧑‍🤝‍🧑",
+    title: "Employed or self-employed staff",
+    description:
+      "Mark each team member employed or self-employed. An employed member's earnings show up in your own Insights; a self-employed chair-renter's takings are their own business and stay private to their portal.",
+  },
 ];
 
 export default function HowItWorksPage() {
@@ -183,7 +195,7 @@ export default function HowItWorksPage() {
           <div className="feature-card">
             <div className="feature-icon">👥</div>
             <h3>By team member</h3>
-            <p>Appointments, hours booked, utilisation and clients for each person. Takings are shown to the owner only, and each person&apos;s own earnings stay in their portal.</p>
+            <p>Appointments, hours booked, utilisation and clients for each person, owner-only. An employed team member&apos;s revenue is shown here too; a self-employed chair-renter&apos;s takings aren&apos;t part of the shop&apos;s revenue, and stay private to their own portal.</p>
           </div>
         </div>
         <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
@@ -203,7 +215,7 @@ export default function HowItWorksPage() {
           <div className="feature-card">
             <div className="feature-icon">💷</div>
             <h3>See what they&apos;ve earned</h3>
-            <p>Every staff member can see their own day-by-day and month-to-date earnings totals — nobody else&apos;s, including you. As the owner, you can see and record the price and payment for any single booking, but those running totals stay private to each staff member.</p>
+            <p>Mark a team member <strong>self-employed</strong> (the default, for someone renting their own chair) and their day-by-day and month-to-date earnings stay private to them, visible to nobody else, including you. Mark them <strong>employed</strong> instead, and you see their schedule and earnings from your own dashboard too — the way it works for the rest of your business.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon">📈</div>

@@ -3,7 +3,7 @@
 // always looks current. A fixed seed means every visitor sees the same shop.
 // Nothing here touches the database.
 
-import type { CapacityInputs, InsightBooking } from '@/lib/insights'
+import type { CapacityInputs, InsightBooking, StaffSchedule } from '@/lib/insights'
 
 function seeded(seed: number) {
   return () => {
@@ -40,10 +40,14 @@ export function buildDemoInsights(now: Date = new Date()): { bookings: InsightBo
     fri: ['09:00', '18:00'],
     sat: ['08:30', '16:00'],
   }
-  const staff = [
-    { id: 'maya', name: 'Maya Chen', working_hours: open, breaks: { tue: [['13:00', '13:30']], fri: [['13:00', '13:30']] } as Record<string, [string, string][]> },
-    { id: 'ade', name: 'Ade Okafor', working_hours: { wed: open.wed, thu: open.thu, fri: open.fri, sat: open.sat }, breaks: {} },
-    { id: 'callum', name: 'Callum Reed', working_hours: { tue: open.tue, thu: open.thu, fri: open.fri, sat: open.sat }, breaks: {} },
+  // A mix of employment statuses, same as a real multi-chair shop — Maya is
+  // employed (the owner sees her earnings on Insights), Ade and Callum rent
+  // their chairs self-employed (their takings are their own business, left
+  // out of the shop's revenue figures).
+  const staff: StaffSchedule[] = [
+    { id: 'maya', name: 'Maya Chen', working_hours: open, breaks: { tue: [['13:00', '13:30']], fri: [['13:00', '13:30']] } as Record<string, [string, string][]>, employment_status: 'employed' },
+    { id: 'ade', name: 'Ade Okafor', working_hours: { wed: open.wed, thu: open.thu, fri: open.fri, sat: open.sat }, breaks: {}, employment_status: 'self_employed' },
+    { id: 'callum', name: 'Callum Reed', working_hours: { tue: open.tue, thu: open.thu, fri: open.fri, sat: open.sat }, breaks: {}, employment_status: 'self_employed' },
   ]
 
   const bookings: InsightBooking[] = []
@@ -53,7 +57,7 @@ export function buildDemoInsights(now: Date = new Date()): { bookings: InsightBo
     const key = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][day.getDay()]
     const seasonal = 0.85 + 0.25 * Math.sin((offset + 430) / 45) + (day.getMonth() === 11 ? 0.15 : 0)
     for (const s of staff) {
-      const hours = s.working_hours[key]
+      const hours = s.working_hours?.[key]
       if (!hours) continue
       const [oh, om] = hours[0].split(':').map(Number)
       const [ch, cm] = hours[1].split(':').map(Number)

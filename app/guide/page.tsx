@@ -111,6 +111,23 @@ export default function GuidePage() {
             (see the next section) so customers only see the right staff for the
             service they&apos;ve chosen.
           </p>
+          <h3>Parallel treatment</h3>
+          <p>
+            Some services run a long time but don&apos;t need a staff member&apos;s
+            constant attention — a colour that needs processing time, a perm. Turn
+            on <strong>Allow parallel treatment</strong> on a service and add one or
+            more <strong>contact windows</strong>: the minutes within the
+            appointment that actually need the staff member, given as a start and
+            end minute from the start of the booking.
+          </p>
+          <p>
+            For example, a 180-minute colour service might need 45 minutes at the
+            start and 20 minutes at the end — two windows, <strong>0&ndash;45</strong>{" "}
+            and <strong>160&ndash;180</strong>. The 115 minutes in between are left
+            open, so that staff member can take another booking in the gap. Leave
+            parallel treatment off (the default) and the whole duration needs them,
+            exactly as before.
+          </p>
         </section>
 
         <section id="staff" className="doc-section">
@@ -125,6 +142,14 @@ export default function GuidePage() {
             <li><strong>Working hours</strong> — the days and hours this person is available. Customers can only book within both this and your business&apos;s opening hours.</li>
             <li><strong>Breaks</strong> — block out lunch or any other time that shouldn&apos;t be bookable, per day.</li>
             <li><strong>Automatically confirm this person&apos;s bookings</strong> — optional. Switch this on for a staff member and their bookings are accepted instantly when a customer requests them, instead of landing as a pending request for you to approve.</li>
+            <li>
+              <strong>Employment status</strong> — <strong>Self-employed</strong> (the
+              default, for someone renting their own chair) or{" "}
+              <strong>Employed</strong>. This decides whether you see their
+              schedule, earnings and Insights revenue from your own dashboard, or
+              whether those stay private to their own portal — see the next
+              section.
+            </li>
           </ul>
           <p>
             Click <strong>Save</strong>, and the staff member immediately appears on
@@ -135,8 +160,8 @@ export default function GuidePage() {
             From each staff member&apos;s card you can also open their{" "}
             <strong>calendar</strong>, which shows their booking schedule as a
             single day or a full week at a time — handy for seeing who&apos;s in
-            and when at a glance. Their earnings aren&apos;t shown here; see the
-            next section for why.
+            and when at a glance. For a self-employed staff member, their earnings
+            aren&apos;t shown here; see the next section for why.
           </p>
         </section>
 
@@ -174,12 +199,19 @@ export default function GuidePage() {
             changes go through you.
           </p>
           <div className="doc-note">
-            The owner dashboard shows each staff member&apos;s booking schedule
-            and lets you see and record the price and payment for any single
-            booking (see the next section) — but never their running
-            earnings totals. Today&apos;s and month-to-date figures (expected
-            vs. actual) are only ever visible to that staff member
-            themselves, from their own portal.
+            <strong>Self-employed</strong> staff (the default): the owner
+            dashboard shows their booking schedule and lets you see and record
+            the price and payment for any single booking (see the next section)
+            — but never their running earnings totals. Today&apos;s and
+            month-to-date figures (expected vs. actual) are only ever visible
+            to that staff member themselves, from their own portal.
+            <br /><br />
+            <strong>Employed</strong> staff: the owner dashboard additionally
+            shows their full schedule and earnings, and their revenue is
+            included in your Insights &quot;by team member&quot; table — the way it
+            works for the rest of your business. An employed staff member no
+            longer sees money in their own portal; their schedule is managed
+            from your dashboard instead.
           </div>
           <p>
             You can resend an invite at any time (for example if the link
@@ -261,7 +293,7 @@ export default function GuidePage() {
           </ul>
           <p>For that period you&apos;ll see, each with a ▲ or ▼ against the comparison:</p>
           <ul>
-            <li><strong>Revenue</strong> — what was recorded as paid, or the service price where nothing different was entered.</li>
+            <li><strong>Revenue</strong> — what was recorded as paid, or the service price where nothing different was entered, from bookings handled by <strong>employed</strong> staff only. A self-employed team member&apos;s takings are their own business, not the shop&apos;s, so they&apos;re left out of Revenue and Average spend here (Appointments, Utilisation and Clients still reflect the whole diary).</li>
             <li><strong>Appointments</strong> — visits that went ahead (no-shows and cancellations aren&apos;t counted).</li>
             <li><strong>Utilisation</strong> — how much of your bookable time was booked. Bookable time comes from your opening hours and each staff member&apos;s hours, minus breaks and holidays, so set those up for this to be accurate.</li>
             <li><strong>Average spend</strong>, <strong>clients</strong> (and how many were new), and <strong>no-shows</strong> and cancellations.</li>
@@ -291,9 +323,11 @@ export default function GuidePage() {
             If you have more than one staff member, a table shows each
             person&apos;s appointments, hours booked, utilisation and clients.
             Money figures on the Insights page are shown to the <strong>owner
-            only</strong>; admins see everything else. Individual earnings are
-            never shown per person here — they stay in each staff member&apos;s
-            own portal.
+            only</strong>; admins see everything else. Within that table, an{" "}
+            <strong>employed</strong> team member&apos;s revenue is shown
+            alongside their other figures; a <strong>self-employed</strong>{" "}
+            team member&apos;s earnings are never shown per person — they stay
+            in that staff member&apos;s own portal.
           </p>
         </section>
 
@@ -384,6 +418,24 @@ export default function GuidePage() {
           <p>No. Customers book with just their name and contact details, and manage their booking via the personal link in their confirmation email.</p>
           <h3>Why is my utilisation blank or the heatmap empty?</h3>
           <p>Utilisation needs your opening hours and each staff member&apos;s working hours to be set, so TrimBooking knows how much time was bookable. The busy and quiet view also needs a few weeks of bookings to show a pattern.</p>
+          <h3>Should I mark a staff member employed or self-employed?</h3>
+          <p>
+            If they&apos;re on your payroll and the money they take is part of
+            your business&apos;s revenue, mark them <strong>employed</strong> —
+            you&apos;ll see their schedule and earnings from your dashboard and
+            Insights, same as the rest of your business. If they rent their own
+            chair and keep their own takings, leave them{" "}
+            <strong>self-employed</strong> (the default) so their earnings stay
+            private to their own portal and out of your Insights revenue.
+          </p>
+          <h3>Why don&apos;t I see Revenue for a staff member I can see the schedule for?</h3>
+          <p>
+            Revenue on Insights only ever includes bookings handled by staff
+            marked <strong>employed</strong>. A self-employed team member&apos;s
+            schedule is visible to you (so you know who&apos;s in and when),
+            but their takings are their own business, not the shop&apos;s —
+            mark them employed instead if that should change.
+          </p>
           <h3>Is there a cost to try it?</h3>
           <p>
             Every business gets a free 30-day trial with no card required. About
