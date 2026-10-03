@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { offerFreedSlotToWaitlist } from '@/lib/waitlist'
 import AvailabilityPicker, { WorkingHours, BreakWindows } from '../../AvailabilityPicker'
 
 type Staff = {
@@ -121,6 +122,19 @@ export default function ManageBookingClient({
       }),
     }).catch(() => {})
 
+    if (booking.staff?.id) {
+      offerFreedSlotToWaitlist({
+        supabase,
+        tenantId,
+        staffId: booking.staff.id,
+        slotStart: booking.start_time,
+        slotEnd: booking.end_time,
+        tenantName,
+        subdomain,
+        staffName: booking.staff?.name,
+      })
+    }
+
     setBooking({ ...booking, status: 'cancelled' })
     setMessage('Your booking has been cancelled.')
     setSaving(false)
@@ -165,6 +179,19 @@ export default function ManageBookingClient({
         manageUrl,
       }),
     }).catch(() => {})
+
+    if (booking.staff?.id) {
+      offerFreedSlotToWaitlist({
+        supabase,
+        tenantId,
+        staffId: booking.staff.id,
+        slotStart: booking.start_time,
+        slotEnd: booking.end_time,
+        tenantName,
+        subdomain,
+        staffName: booking.staff?.name,
+      })
+    }
 
     setBooking({ ...booking, start_time: startTime.toISOString(), end_time: endTime.toISOString(), status: 'pending' })
     setMode('view')

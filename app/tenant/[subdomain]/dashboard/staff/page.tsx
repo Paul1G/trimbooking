@@ -23,6 +23,7 @@ type Staff = {
   auto_confirm_bookings: boolean | null
   is_shop_admin: boolean | null
   employment_status: 'self_employed' | 'employed' | null
+  waitlist_enabled: boolean | null
 }
 
 type Service = {
@@ -54,6 +55,9 @@ export default function StaffPage() {
   const [employmentStatus, setEmploymentStatus] = useState<'self_employed' | 'employed'>('self_employed')
   const [savingShopAdmin, setSavingShopAdmin] = useState(false)
   const [shopAdminError, setShopAdminError] = useState('')
+  const [waitlistEnabled, setWaitlistEnabled] = useState(false)
+  const [savingWaitlist, setSavingWaitlist] = useState(false)
+  const [waitlistToggleError, setWaitlistToggleError] = useState('')
   const [error, setError] = useState('')
   const [inviteStatus, setInviteStatus] = useState<Record<string, string>>({})
   const [invitingId, setInvitingId] = useState<string | null>(null)
@@ -155,6 +159,8 @@ export default function StaffPage() {
     setAutoConfirmBookings(!!member.auto_confirm_bookings)
     setIsShopAdmin(!!member.is_shop_admin)
     setEmploymentStatus(member.employment_status === 'employed' ? 'employed' : 'self_employed')
+    setWaitlistEnabled(!!member.waitlist_enabled)
+    setWaitlistToggleError('')
     setShopAdminError('')
     setError('')
 
@@ -337,6 +343,36 @@ export default function StaffPage() {
       setShopAdminError(err instanceof Error ? err.message : 'Could not update admin access.')
     } finally {
       setSavingShopAdmin(false)
+    }
+  }
+
+  // Owner-only, and only ever works server-side for an EMPLOYED staff
+  // member (owner_set_staff_waitlist, supabase/migrations/20261003_waitlist.sql)
+  // — a self-employed member's waitlist is their own to turn on, from their
+  // own staff portal.
+  async function toggleWaitlist(member: Staff, nextValue: boolean) {
+    if (!tenantId) return
+    setSavingWaitlist(true)
+    setWaitlistToggleError('')
+
+    try {
+      const { error: rpcError } = await supabase.rpc('owner_set_staff_waitlist', {
+        p_tenant_id: tenantId,
+        p_staff_id: member.id,
+        p_enabled: nextValue,
+      })
+
+      if (rpcError) {
+        setWaitlistToggleError(rpcError.message || 'Could not update the waitlist setting.')
+        return
+      }
+
+      setWaitlistEnabled(nextValue)
+      setStaffList((prev) => prev.map((s) => (s.id === member.id ? { ...s, waitlist_enabled: nextValue } : s)))
+    } catch (err) {
+      setWaitlistToggleError(err instanceof Error ? err.message : 'Could not update the waitlist setting.')
+    } finally {
+      setSavingWaitlist(false)
     }
   }
 
@@ -589,6 +625,41 @@ export default function StaffPage() {
             </div>
 
             <div className="field-group">
+              {employmentStatus === 'employed' ? (
+                editingId ? (
+                  <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={waitlistEnabled}
+                        disabled={savingWaitlist}
+                        onChange={(e) => {
+                          const member = staffList.find((s) => s.id === editingId)
+                          if (member) toggleWaitlist(member, e.target.checked)
+                        }}
+                      />
+                      Let customers join this person&apos;s waitlist
+                    </label>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                      If a booking with them is cancelled, the longest-waiting customer whose service fits the
+                      freed time is automatically emailed the slot, with 24 hours to accept before it moves on
+                      to the next person waiting.
+                    </p>
+                    {waitlistToggleError && <p className="error-text" style={{ marginTop: '0.4rem' }}>{waitlistToggleError}</p>}
+                  </>
+                ) : (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Save this person first, then come back here to turn their waitlist on.
+                  </p>
+                )
+              ) : (
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Waitlist: {waitlistEnabled ? 'on' : 'off'} — self-employed staff turn this on themselves, from their own staff portal.
+                </p>
+              )}
+            </div>
+
+            <div className="field-group">
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -681,6 +752,7 @@ export default function StaffPage() {
                         {member.role}
                         {member.employment_status === 'employed' ? ' · Employed' : ''}
                         {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
+                        {member.waitlist_enabled ? ' · Waitlist on' : ''}
                         {member.is_shop_admin ? ' · Dashboard admin' : ''}
                       </div>
                     </div>

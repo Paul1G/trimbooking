@@ -69,6 +69,11 @@ export default function StaffPortalPage() {
   // from the Calendar page on the dashboard (owner_get_staff_bookings).
   const [employmentStatus, setEmploymentStatus] = useState<'self_employed' | 'employed'>('self_employed')
   const [otherShops, setOtherShops] = useState<{ tenant_id: string; tenant_name: string; subdomain: string; role: string }[]>([])
+  // Self-employed staff turn their own waitlist on/off here (employed staff
+  // have it set by the owner instead — see dashboard/staff/page.tsx).
+  const [waitlistEnabled, setWaitlistEnabled] = useState(false)
+  const [savingWaitlist, setSavingWaitlist] = useState(false)
+  const [waitlistToggleError, setWaitlistToggleError] = useState('')
 
   const [selectedDate, setSelectedDate] = useState(() => toDateStr(new Date()))
   const [dayBookings, setDayBookings] = useState<Booking[]>([])
@@ -139,6 +144,9 @@ export default function StaffPortalPage() {
       const { data: statusData } = await supabase.rpc('staff_get_my_employment_status', { p_tenant_id: tenant.id })
       if (statusData === 'employed') setEmploymentStatus('employed')
 
+      const { data: waitlistData } = await supabase.rpc('staff_get_my_waitlist', { p_tenant_id: tenant.id })
+      setWaitlistEnabled(!!waitlistData)
+
       const { data: shops } = await supabase.rpc('my_shop_associations')
       setOtherShops(((shops as typeof otherShops) || []).filter((s) => s.subdomain !== params.subdomain))
 
@@ -193,6 +201,27 @@ export default function StaffPortalPage() {
     } catch {
       setConnectError('Could not start payout setup.')
       setConnectLoading(false)
+    }
+  }
+
+  async function toggleMyWaitlist(nextValue: boolean) {
+    if (!tenantId) return
+    setSavingWaitlist(true)
+    setWaitlistToggleError('')
+    try {
+      const { error: rpcError } = await supabase.rpc('staff_update_my_waitlist', {
+        p_tenant_id: tenantId,
+        p_enabled: nextValue,
+      })
+      if (rpcError) {
+        setWaitlistToggleError(rpcError.message || 'Could not update your waitlist setting.')
+        return
+      }
+      setWaitlistEnabled(nextValue)
+    } catch (err) {
+      setWaitlistToggleError(err instanceof Error ? err.message : 'Could not update your waitlist setting.')
+    } finally {
+      setSavingWaitlist(false)
     }
   }
 
@@ -536,6 +565,26 @@ export default function StaffPortalPage() {
             </>
           )}
         </div>
+
+        {!isEmployed && (
+        <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={waitlistEnabled}
+              disabled={savingWaitlist}
+              onChange={(e) => toggleMyWaitlist(e.target.checked)}
+            />
+            Let customers join my waitlist
+          </label>
+          <p className="card-sub" style={{ margin: 0 }}>
+            If one of your bookings is cancelled, the longest-waiting customer whose service fits the
+            freed time is automatically emailed the slot, with 24 hours to accept before it moves on
+            to the next person waiting.
+          </p>
+          {waitlistToggleError && <p style={{ color: '#991b1b', fontSize: '0.85rem', margin: 0 }}>{waitlistToggleError}</p>}
+        </div>
+        )}
 
         {!isEmployed && (
         <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', marginBottom: '1.5rem' }}>

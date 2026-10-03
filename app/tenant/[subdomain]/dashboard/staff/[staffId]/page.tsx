@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { offerFreedSlotToWaitlist } from '@/lib/waitlist'
 import Link from 'next/link'
 import { toDateStr } from '@/lib/availability'
 import CustomerHistoryView from '../../../CustomerHistoryView'
@@ -312,6 +313,19 @@ export default function StaffCalendarPage() {
           manageUrl,
         }),
       }).catch(() => {})
+
+      if (status === 'declined' || status === 'cancelled') {
+        offerFreedSlotToWaitlist({
+          supabase,
+          tenantId,
+          staffId,
+          slotStart: booking.start_time,
+          slotEnd: booking.end_time,
+          tenantName,
+          subdomain: params.subdomain as string,
+          staffName,
+        })
+      }
     }
 
     setSelected(null)

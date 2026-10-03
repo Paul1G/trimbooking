@@ -88,6 +88,7 @@ type Staff = {
   working_hours: WorkingHours
   breaks?: BreakWindows | null
   auto_confirm_bookings?: boolean | null
+  waitlist_enabled?: boolean | null
 }
 type Service = {
   id: string
@@ -163,8 +164,51 @@ export default function BookingForm({
   const [lastBooking, setLastBooking] = useState<{ start_time: string; service_name: string | null } | null>(null)
   const [cardSetup, setCardSetup] = useState<{ clientSecret: string; customerId: string } | null>(null)
   const [startingCard, setStartingCard] = useState(false)
+  const [joinWaitlistOpen, setJoinWaitlistOpen] = useState(false)
+  const [waitlistName, setWaitlistName] = useState('')
+  const [waitlistPhone, setWaitlistPhone] = useState('')
+  const [waitlistEmail, setWaitlistEmail] = useState('')
+  const [waitlistSubmitting, setWaitlistSubmitting] = useState(false)
+  const [waitlistError, setWaitlistError] = useState('')
+  const [waitlistJoined, setWaitlistJoined] = useState(false)
 
   const selectedStaff = staffList.find((s) => s.id === selectedStaffId)
+
+  async function handleJoinWaitlist() {
+    if (!waitlistName || !waitlistPhone || !waitlistEmail) {
+      setWaitlistError('Please fill in your name, phone number, and email.')
+      return
+    }
+    if (!isValidEmail(waitlistEmail)) {
+      setWaitlistError('Please enter a valid email address.')
+      return
+    }
+    if (!isValidUKPhone(waitlistPhone)) {
+      setWaitlistError('Please enter a valid UK phone number, e.g. 07123 456789 or 0131 281 1942.')
+      return
+    }
+
+    setWaitlistSubmitting(true)
+    setWaitlistError('')
+
+    const { error: insertError } = await supabase.from('waitlist_entries').insert({
+      tenant_id: tenantId,
+      staff_id: selectedStaffId,
+      service_id: service.id,
+      customer_name: waitlistName,
+      customer_phone: waitlistPhone,
+      customer_email: waitlistEmail,
+    })
+
+    setWaitlistSubmitting(false)
+
+    if (insertError) {
+      setWaitlistError('Sorry, we couldn\'t add you to the waitlist — please try again.')
+      return
+    }
+
+    setWaitlistJoined(true)
+  }
 
   async function handleReview() {
     if (!selection || !name || !phone || !email) {
@@ -417,7 +461,13 @@ export default function BookingForm({
         <select
           className="field-input"
           value={selectedStaffId}
-          onChange={(e) => { setSelectedStaffId(e.target.value); setSelection(null) }}
+          onChange={(e) => {
+            setSelectedStaffId(e.target.value)
+            setSelection(null)
+            setJoinWaitlistOpen(false)
+            setWaitlistJoined(false)
+            setWaitlistError('')
+          }}
         >
           {staffList.map((s) => (
             <option key={s.id} value={s.id}>{s.name} — {s.role}</option>
@@ -434,6 +484,49 @@ export default function BookingForm({
           contactWindows={service.allow_parallel ? service.contact_windows || undefined : undefined}
           onSelect={setSelection}
         />
+      )}
+
+      {selectedStaff?.waitlist_enabled && (
+        <div style={{ marginTop: '1.5rem', padding: '1rem', border: '1px dashed #ddd', borderRadius: 10 }}>
+          {waitlistJoined ? (
+            <p style={{ color: '#166534', margin: 0 }}>
+              You&apos;re on the waitlist for {selectedStaff.name} — we&apos;ll email you if a {service.name} slot opens up from a cancellation.
+            </p>
+          ) : !joinWaitlistOpen ? (
+            <>
+              <p style={{ margin: '0 0 0.5rem', fontWeight: 600 }}>Can&apos;t find a time that works?</p>
+              <p className="card-sub" style={{ margin: '0 0 0.75rem' }}>
+                Join the waitlist for {selectedStaff.name} — we&apos;ll email you the moment a {service.name} slot opens up from a cancellation.
+                You&apos;ll have 24 hours to accept or decline.
+              </p>
+              <button
+                onClick={() => setJoinWaitlistOpen(true)}
+                style={{ padding: '0.7rem 1.4rem', background: 'transparent', border: '1px solid #ddd', borderRadius: 10, cursor: 'pointer' }}
+              >
+                Join the waitlist
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="field-group">
+                <label className="field-label">Your name</label>
+                <input className="field-input" value={waitlistName} onChange={(e) => setWaitlistName(e.target.value)} />
+              </div>
+              <div className="field-group">
+                <label className="field-label">Phone number</label>
+                <input className="field-input" value={waitlistPhone} onChange={(e) => setWaitlistPhone(e.target.value)} />
+              </div>
+              <div className="field-group">
+                <label className="field-label">Email address</label>
+                <input type="email" className="field-input" value={waitlistEmail} onChange={(e) => setWaitlistEmail(e.target.value)} />
+              </div>
+              {waitlistError && <p className="error-text">{waitlistError}</p>}
+              <button className="btn-primary" onClick={handleJoinWaitlist} disabled={waitlistSubmitting}>
+                {waitlistSubmitting ? 'Joining...' : 'Join waitlist'}
+              </button>
+            </>
+          )}
+        </div>
       )}
 
       {selection && (

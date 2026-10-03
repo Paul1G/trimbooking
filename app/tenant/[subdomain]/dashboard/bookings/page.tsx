@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { resolveShopRole } from '@/lib/shopAccess'
+import { offerFreedSlotToWaitlist } from '@/lib/waitlist'
 import Link from 'next/link'
 import CustomerHistoryView from '../../CustomerHistoryView'
 import '../../tenant.css'
@@ -177,6 +178,19 @@ export default function BookingsPage() {
           manageUrl,
         }),
       }).catch(() => {})
+
+      if ((status === 'declined' || status === 'cancelled') && booking.staff_id) {
+        offerFreedSlotToWaitlist({
+          supabase,
+          tenantId,
+          staffId: booking.staff_id,
+          slotStart: booking.start_time,
+          slotEnd: booking.end_time,
+          tenantName,
+          subdomain: params.subdomain as string,
+          staffName: booking.staff?.name,
+        })
+      }
     }
 
     setSelected(null)

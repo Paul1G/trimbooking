@@ -513,3 +513,63 @@ export async function sendBookingEmail(params: BookingEmailParams) {
 
   return { id: data?.id }
 }
+
+// Sent when match_waitlist_for_cancellation (supabase/migrations/20261003_waitlist.sql)
+// finds a waiting customer whose service fits a slot that's just been freed
+// by a cancellation. The link goes to a page with Accept/Decline buttons
+// (app/tenant/[subdomain]/waitlist/[token]/page.tsx) rather than acting
+// directly on click, so an email client's link-prescanning can't accidentally
+// accept or decline the offer on the customer's behalf.
+export async function sendWaitlistOfferEmail({
+  tenantName,
+  subdomain,
+  customerEmail,
+  customerName,
+  serviceName,
+  staffName,
+  offeredStart,
+  offerToken,
+}: {
+  tenantName: string
+  subdomain: string
+  customerEmail: string
+  customerName: string
+  serviceName?: string
+  staffName?: string
+  offeredStart: string
+  offerToken: string
+}) {
+  if (!customerEmail) {
+    return { error: 'Missing customer email' }
+  }
+
+  const dateStr = new Date(offeredStart).toLocaleString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  const offerUrl = `https://${subdomain}.trimbooking.co.uk/waitlist/${offerToken}`
+
+  const { data, error } = await resend.emails.send({
+    from: fromAddress(tenantName),
+    to: customerEmail,
+    subject: `A slot just opened up — ${tenantName}`,
+    html: `
+      <p>Hi ${customerName},</p>
+      <p>Good news — a spot has opened up with <strong>${tenantName}</strong> that matches what
+      you're waiting for:</p>
+      <p><strong>${serviceName || 'Your service'}</strong>${staffName ? ` with ${staffName}` : ''}<br/>${dateStr}</p>
+      <p>This spot is held for you for the next <strong>24 hours</strong>. After that, or if you
+      decline, it'll be offered to the next person waiting.</p>
+      <p style="margin-top:1.25rem"><a href="${offerUrl}">Accept or decline this slot</a></p>
+    `,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { id: data?.id }
+}
