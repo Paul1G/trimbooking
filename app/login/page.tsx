@@ -50,6 +50,9 @@ export default function LoginRedirectPage() {
           <Link href="/pricing" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
             Pricing
           </Link>
+          <Link href="/compare" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
+            Compare
+          </Link>
           <Link href="/guide" style={{ fontSize: '0.9rem', color: 'var(--muted)', textDecoration: 'none' }}>
             User guide
           </Link>

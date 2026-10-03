@@ -32,6 +32,9 @@ export default function GuidePage() {
           <Link href="/pricing" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
             Pricing
           </Link>
+          <Link href="/compare" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
+            Compare
+          </Link>
           <Link href="/guide" style={{ fontSize: "0.9rem", color: "var(--muted)", textDecoration: "none" }}>
             User guide
           </Link>
@@ -459,6 +462,7 @@ export default function GuidePage() {
           <Link href="/">Home</Link>
           <Link href="/how-it-works">How it works</Link>
           <Link href="/pricing">Pricing</Link>
+          <Link href="/compare">Compare</Link>
           <Link href="/guide">User guide</Link>
           <Link href="/about">About &amp; support</Link>
           <Link href="/terms">Terms</Link>
