@@ -4,7 +4,10 @@ import "../home.css";
 type Row = {
   feature: string;
   us: string;
-  them: string;
+  revyfy: string;
+  fresha: string;
+  vagaro: string;
+  treatwell: string;
 };
 
 type Group = {
@@ -12,62 +15,127 @@ type Group = {
   rows: Row[];
 };
 
-// Kept as data so a second or third competitor column is a small change,
-// not a rewrite — see the note at the bottom of the page.
+const COMPETITORS: { key: keyof Omit<Row, "feature" | "us">; name: string }[] = [
+  { key: "revyfy", name: "Revyfy" },
+  { key: "fresha", name: "Fresha" },
+  { key: "vagaro", name: "Vagaro" },
+  { key: "treatwell", name: "Treatwell" },
+];
+
+// Kept as data so adding another competitor is a new key on each row, not a
+// rewrite of the page. "Not specified" means we couldn't confirm it either
+// way from that platform's own public pages — see the sources note below.
 const groups: Group[] = [
   {
     title: "Pricing",
     rows: [
-      { feature: "4 staff or fewer", us: "£20/month", them: "£39.99/month" },
-      { feature: "10 staff", us: "£35/month", them: "£39.99/month" },
-      { feature: "12+ staff", us: "£40+/month", them: "£39.99/month (flat)" },
-      { feature: "Optional AI assistant", us: "—", them: "+£24.99/month" },
-      { feature: "Commission on bookings", us: "None", them: "None" },
-      { feature: "Contract", us: "None, cancel any time", them: "None, cancel any time" },
-      { feature: "Free trial", us: "30 days, no card", them: "14 days, no card" },
+      {
+        feature: "Pricing model",
+        us: "Flat fee + per extra staff",
+        revyfy: "Flat fee, unlimited staff",
+        fresha: "Per bookable team member",
+        vagaro: "Flat fee + per extra calendar",
+        treatwell: "No subscription — commission per booking",
+      },
+      {
+        feature: "Cost for a solo operator",
+        us: "£20/month",
+        revyfy: "£39.99/month",
+        fresha: "$19.95/month (USD)",
+        vagaro: "$23.99–30/month (USD)",
+        treatwell: "£0/month",
+      },
+      {
+        feature: "Cost for 4 staff (approx.)",
+        us: "£20/month",
+        revyfy: "£39.99/month",
+        fresha: "~$59.80/month (USD)",
+        vagaro: "~$60/month (USD)",
+        treatwell: "£0/month",
+      },
+      {
+        feature: "Commission per booking",
+        us: "None",
+        revyfy: "None",
+        fresha: "20% one-off on new clients, free on repeat",
+        vagaro: "None",
+        treatwell: "35% on new clients, free on repeat",
+      },
+      {
+        feature: "Payment processing fee",
+        us: "Stripe's standard rate",
+        revyfy: "Not specified",
+        fresha: "2.3–3.3% + $0.20–0.30 per transaction",
+        vagaro: "Not specified",
+        treatwell: "2.5% on online prepayments, +VAT",
+      },
+      {
+        feature: "AI assistant",
+        us: "—",
+        revyfy: "+£24.99/month add-on",
+        fresha: "+$99.95/location add-on",
+        vagaro: "Included",
+        treatwell: "AI receptionist mentioned, pricing not specified",
+      },
+      {
+        feature: "Contract",
+        us: "None, cancel any time",
+        revyfy: "None, cancel any time",
+        fresha: "None stated",
+        vagaro: "None, cancel any time",
+        treatwell: "None, free to join",
+      },
+      {
+        feature: "Free trial",
+        us: "30 days, no card",
+        revyfy: "14 days, no card",
+        fresha: "7 days",
+        vagaro: "30 days",
+        treatwell: "Not applicable (no subscription)",
+      },
     ],
   },
   {
     title: "Booking & scheduling",
     rows: [
-      { feature: "Branded booking page", us: "Yes", them: "Yes" },
-      { feature: "Staff calendars, hours, breaks & holidays", us: "Yes", them: "Yes" },
-      { feature: "Accept/decline or auto-confirm bookings", us: "Yes", them: "Automatic confirmation" },
-      { feature: "Parallel treatment (e.g. colour processing time)", us: "Yes", them: "Yes" },
-      { feature: "Waitlist for cancelled slots", us: "—", them: "Yes" },
-      { feature: "Room & equipment scheduling", us: "—", them: "Yes" },
-      { feature: "SMS reminders", us: "—", them: "Yes" },
-      { feature: "Email confirmations & reminders", us: "Yes", them: "Yes" },
+      { feature: "Branded booking page", us: "Yes", revyfy: "Yes", fresha: "Yes", vagaro: "Yes", treatwell: "Marketplace listing, not a branded page" },
+      { feature: "Staff calendars, hours, breaks & holidays", us: "Yes", revyfy: "Yes", fresha: "Yes", vagaro: "Yes", treatwell: "Not specified" },
+      { feature: "Accept/decline or auto-confirm bookings", us: "Yes", revyfy: "Automatic confirmation", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "Parallel treatment (e.g. colour processing time)", us: "Yes", revyfy: "Yes", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "Waitlist for cancelled slots", us: "—", revyfy: "Yes", fresha: "Yes", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "Room & equipment scheduling", us: "—", revyfy: "Yes", fresha: "Not specified", vagaro: "Yes", treatwell: "Not specified" },
+      { feature: "SMS reminders", us: "—", revyfy: "Yes", fresha: "Yes, free allowance then pay-per-text", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "Email confirmations & reminders", us: "Yes", revyfy: "Yes", fresha: "Yes, free allowance then pay-per-email", vagaro: "Yes, 1,000 free/month", treatwell: "Not specified" },
     ],
   },
   {
     title: "Staff & money",
     rows: [
-      { feature: "Self-employed staff: earnings private by default", us: "Yes", them: "Not specified" },
-      { feature: "Employed staff: owner sees schedule & earnings", us: "Yes", them: "Yes" },
-      { feature: "No-show protection (card held, charged only on no-show)", us: "Yes", them: "Deposit at booking" },
-      { feature: "No-show fee paid straight to staff's own account", us: "Yes", them: "Not specified" },
-      { feature: "Staff's own insights (takings, best week, regulars)", us: "Yes", them: "Not specified" },
+      { feature: "Self-employed staff: earnings private by default", us: "Yes", revyfy: "Not specified", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "Employed staff: owner sees schedule & earnings", us: "Yes", revyfy: "Yes", fresha: "Yes (commissions, wages, timesheets)", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "No-show protection (card held, charged only on no-show)", us: "Yes", revyfy: "Deposit at booking", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "No-show fee paid straight to staff's own account", us: "Yes", revyfy: "Not specified", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "Staff's own insights (takings, best week, regulars)", us: "Yes", revyfy: "Not specified", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
     ],
   },
   {
     title: "Business insights",
     rows: [
-      { feature: "Revenue, appointments, utilisation, avg. spend", us: "Yes", them: "Yes" },
-      { feature: "Busy/quiet heatmap", us: "Yes", them: "Not specified" },
-      { feature: "Top spenders & lapsed clients", us: "Yes", them: "Not specified" },
-      { feature: "By-team-member breakdown", us: "Yes", them: "Yes" },
-      { feature: "AI assistant for business questions", us: "—", them: "Optional add-on" },
+      { feature: "Revenue, appointments, utilisation, avg. spend", us: "Yes", revyfy: "Yes", fresha: "Yes (reporting)", vagaro: "Yes (advanced reporting)", treatwell: "Basic performance tracking" },
+      { feature: "Busy/quiet heatmap", us: "Yes", revyfy: "Not specified", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "Top spenders & lapsed clients", us: "Yes", revyfy: "Not specified", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "By-team-member breakdown", us: "Yes", revyfy: "Yes", fresha: "Yes (Team plan)", vagaro: "Not specified", treatwell: "Not specified" },
+      { feature: "AI assistant for business questions", us: "—", revyfy: "Optional add-on", fresha: "Optional add-on", vagaro: "Included", treatwell: "Mentioned (AI receptionist)" },
     ],
   },
   {
     title: "Beyond booking",
     rows: [
-      { feature: "Card payments / POS for retail", us: "—", them: "Yes" },
-      { feature: "Gift cards & loyalty rewards", us: "—", them: "Yes" },
-      { feature: "Marketing & SMS campaigns", us: "—", them: "Yes" },
-      { feature: "Consent / consultation forms", us: "—", them: "Yes" },
-      { feature: "Detailed client records (formulas, allergies, tags)", us: "Basic visit history", them: "Yes" },
+      { feature: "Card payments / POS for retail", us: "—", revyfy: "Yes", fresha: "Yes", vagaro: "Yes", treatwell: "Payments only (Treatwell Pay)" },
+      { feature: "Gift cards & loyalty rewards", us: "—", revyfy: "Yes", fresha: "Yes, loyalty is a paid add-on", vagaro: "Yes", treatwell: "Not specified" },
+      { feature: "Marketing & SMS campaigns", us: "—", revyfy: "Yes", fresha: "Yes, pay-per-message above free allowance", vagaro: "Yes", treatwell: "Marketplace exposure, not campaign tools" },
+      { feature: "Consent / consultation forms", us: "—", revyfy: "Yes", fresha: "Yes", vagaro: "Yes (SOAP notes & forms)", treatwell: "Not specified" },
+      { feature: "Detailed client records (formulas, allergies, tags)", us: "Basic visit history", revyfy: "Yes", fresha: "Yes", vagaro: "Not specified", treatwell: "Not specified" },
     ],
   },
 ];
@@ -78,7 +146,9 @@ function Cell({ value, emphasise }: { value: string; emphasise?: boolean }) {
       ? "compare-no"
       : /^(yes|none)$/i.test(value)
         ? "compare-yes"
-        : "";
+        : /not specified/i.test(value)
+          ? "compare-no"
+          : "";
   return (
     <td className={emphasise ? "compare-us" : undefined}>
       <span className={cls}>{value}</span>
@@ -127,14 +197,19 @@ export default function ComparePage() {
 
       <div className="doc-wrap" style={{ paddingTop: 0 }}>
         <section className="doc-section">
-          <h2>TrimBooking vs. Revyfy</h2>
+          <h2>TrimBooking vs. Revyfy, Fresha, Vagaro &amp; Treatwell</h2>
           <p>
-            <a href="https://revyfy.com" target="_blank" rel="noopener noreferrer">Revyfy</a>{" "}
-            is a fuller salon-management platform — booking plus point of sale, retail,
-            gift cards, marketing campaigns and an optional AI assistant — aimed at
-            hair salons, barbershops, nail/brow studios, aesthetic clinics and spas.
-            Figures below are taken from their public pricing page; &quot;not specified&quot;
-            means we couldn&apos;t find a clear answer either way on their site.
+            <a href="https://revyfy.com" target="_blank" rel="noopener noreferrer">Revyfy</a>,{" "}
+            <a href="https://www.fresha.com" target="_blank" rel="noopener noreferrer">Fresha</a>,{" "}
+            <a href="https://www.vagaro.com" target="_blank" rel="noopener noreferrer">Vagaro</a> and{" "}
+            <a href="https://www.treatwell.co.uk" target="_blank" rel="noopener noreferrer">Treatwell</a>{" "}
+            are four very different approaches to the same problem — a full salon-management
+            suite, a per-staff subscription with a marketplace, a US-style all-in-one with
+            modular add-ons, and a commission-only marketplace with no subscription at all.
+            Figures below are taken from each platform&apos;s own public pricing page.
+            &quot;Not specified&quot; means we couldn&apos;t confirm that one either way — it
+            doesn&apos;t necessarily mean the feature is missing, only that we didn&apos;t find
+            a clear answer on their site.
           </p>
 
           {groups.map((g) => (
@@ -146,7 +221,9 @@ export default function ComparePage() {
                     <tr>
                       <th>Feature</th>
                       <th className="compare-us">TrimBooking</th>
-                      <th>Revyfy</th>
+                      {COMPETITORS.map((c) => (
+                        <th key={c.key}>{c.name}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -154,7 +231,9 @@ export default function ComparePage() {
                       <tr key={r.feature}>
                         <td className="compare-feature">{r.feature}</td>
                         <Cell value={r.us} emphasise />
-                        <Cell value={r.them} />
+                        {COMPETITORS.map((c) => (
+                          <Cell key={c.key} value={r[c.key]} />
+                        ))}
                       </tr>
                     ))}
                   </tbody>
@@ -171,26 +250,51 @@ export default function ComparePage() {
             and business insights — built specifically around how small barbershops,
             salons and grooming businesses actually run, including teams with a mix of
             employed staff and chair-renting self-employed staff. For a team of four or
-            fewer, you&apos;re roughly half Revyfy&apos;s price, and you stay cheaper right up
-            until around 12 staff, where their flat unlimited-staff fee starts to win out.
+            fewer, you&apos;re roughly half Revyfy&apos;s price and well under Fresha&apos;s or
+            Vagaro&apos;s, with no commission eating into every booking the way Treatwell&apos;s
+            does.
           </p>
-          <p>
-            Revyfy is the better fit if you need a single system for everything —
-            taking card payments at the till, selling retail products and gift cards,
-            running marketing campaigns, collecting consent forms, or scheduling rooms
-            and equipment as well as staff. None of that is part of TrimBooking today.
-          </p>
+          <ul>
+            <li>
+              <strong>Revyfy</strong> is the closest match in spirit — a flat monthly fee,
+              no commission — but a fuller suite (POS, retail, marketing, forms) at a
+              flat price regardless of team size, which overtakes TrimBooking&apos;s per-staff
+              pricing once you&apos;re past around 12 staff.
+            </li>
+            <li>
+              <strong>Fresha</strong> charges per bookable team member plus a one-off
+              commission on new marketplace clients, plus pay-as-you-go email/SMS and
+              several paid add-ons (AI, loyalty, insights) — the headline price is low,
+              but it adds up quickly once a team and its extras grow.
+            </li>
+            <li>
+              <strong>Vagaro</strong> is structurally similar to TrimBooking — a base fee
+              plus a per-extra-staff charge — bundled with US-style payments and
+              marketing tools, priced in US dollars.
+            </li>
+            <li>
+              <strong>Treatwell</strong> isn&apos;t really a back-office system at all — no
+              subscription, but a 35% commission on every new client it brings you (free
+              on repeat visits). It&apos;s better thought of as a marketing/lead-generation
+              channel to run alongside a real booking system than a replacement for one.
+            </li>
+          </ul>
           <div className="doc-note">
             <strong>In short:</strong> choose TrimBooking if you want booking, staff
-            earnings privacy and insights done well and cheaply for a small team.
-            Choose Revyfy if you want a full salon-management suite — POS, retail,
-            marketing and an AI assistant — and don&apos;t mind paying a flat fee for it
-            regardless of team size.
+            earnings privacy and insights done well and cheaply for a small team, with
+            nothing taken as commission. Choose Revyfy, Fresha or Vagaro if you need a
+            full salon-management suite — POS, retail, marketing, forms — and are happy
+            to pay more for it. Treatwell is worth having alongside any of these for the
+            marketplace exposure, not instead of one.
           </div>
           <p style={{ fontSize: "0.85rem", color: "var(--muted)" }}>
-            We keep this page updated as either platform changes. More comparisons
-            (Fresha, Vagaro, Treatwell, Booksy) are coming soon — if you&apos;d like us to
-            prioritise one, let us know at{" "}
+            Fresha and Vagaro publish their core pricing in US dollars; figures above are
+            their listed $ price, not a currency conversion, so they aren&apos;t directly
+            comparable to the £ figures without accounting for that. Every platform&apos;s
+            pricing and feature set can change at any time — we keep this page updated as
+            we notice changes, but always double-check anything pricing-critical on the
+            provider&apos;s own site before deciding. If you&apos;d like us to add another
+            platform, let us know at{" "}
             <a href="mailto:pagraham144@gmail.com">pagraham144@gmail.com</a>.
           </p>
         </section>
