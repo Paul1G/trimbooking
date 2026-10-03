@@ -5,6 +5,12 @@
   --border: #e8e8e8;
   --text: #1a1a1a;
   --text-muted: #6b6b6b;
+  /* Fixed, non-branded accents for the Insights charts (week-on-week bars,
+     busy/quiet heatmap) — these are meant to read as a colourful dashboard
+     in their own right, not as another place the shop's single brand
+     colour shows up, so they never derive from --brand. */
+  --chart-accent: #2563eb;
+  --heat-accent: #ea580c;
   font-family: var(--tenant-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif);
   background: var(--bg);
   min-height: 100vh;
@@ -551,7 +557,7 @@
 .insights-delta.down { color: #b91c1c; }
 .insights-delta.flat { color: var(--text-muted); }
 .insights-delta-prev { color: var(--text-muted); font-weight: 400; }
-.insights-mini.is-best { border-color: var(--brand); }
+.insights-mini.is-best { border-color: var(--chart-accent); }
 .insights-section {
   background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
   padding: 1.1rem 1.2rem; margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; min-width: 0;
@@ -567,12 +573,12 @@
   flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
   position: relative; background: none; border: 0; padding: 0; cursor: pointer; min-width: 0;
 }
-.insights-bar { width: 100%; max-width: 34px; background: var(--brand); opacity: 0.55; border-radius: 4px 4px 0 0; transition: opacity 0.15s; }
+.insights-bar { width: 100%; max-width: 34px; background: var(--chart-accent); opacity: 0.55; border-radius: 4px 4px 0 0; transition: opacity 0.15s; }
 .insights-bar.is-best { opacity: 1; }
 .insights-bar.is-current {
   opacity: 0.35;
-  background: repeating-linear-gradient(45deg, var(--brand) 0 4px, transparent 4px 7px);
-  border: 1px solid var(--brand); border-bottom: 0;
+  background: repeating-linear-gradient(45deg, var(--chart-accent) 0 4px, transparent 4px 7px);
+  border: 1px solid var(--chart-accent); border-bottom: 0;
 }
 .insights-bar-col.is-hover .insights-bar { opacity: 1; }
 .insights-best-tag {
@@ -592,7 +598,7 @@
   background: var(--bg); overflow: hidden;
 }
 .insights-heat-cell::after, .insights-heat-swatch::after {
-  content: ''; position: absolute; inset: 0; background: var(--brand); opacity: calc(0.06 + var(--lvl, 0) * 0.94);
+  content: ''; position: absolute; inset: 0; background: var(--heat-accent); opacity: calc(0.06 + var(--lvl, 0) * 0.94);
 }
 .insights-heat-cell.is-closed, .insights-heat-swatch.is-closed {
   background: repeating-linear-gradient(135deg, #eee 0 3px, #fafafa 3px 6px); cursor: default;
