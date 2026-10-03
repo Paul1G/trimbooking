@@ -99,18 +99,47 @@ export default function BookingsPage() {
         .order('name', { ascending: true })
       setStaffList((staffRows as StaffMember[]) || [])
 
-      await loadBookings(tenant.id)
       setChecking(false)
     }
     load()
   }, [params.subdomain, router])
 
+  // Loading every booking the shop has ever had in one go breaks down for a
+  // busy (or long-running) shop — an unbounded select silently gets capped
+  // by Supabase's default row limit, ordered by start_time, so once a shop
+  // passes that many bookings the newest ones (today's week, "upcoming")
+  // never arrive even though the fetch itself succeeds. Instead, scope the
+  // query to only what the current view actually needs: the visible week
+  // for the calendar, or a sensible window for each list filter.
+  useEffect(() => {
+    if (!tenantId) return
+    loadBookings(tenantId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, view, weekStart, filter])
+
   async function loadBookings(tid: string) {
-    const { data } = await supabase
+    let query = supabase
       .from('bookings')
       .select('id, customer_name, customer_phone, customer_email, start_time, end_time, status, manage_token, amount_paid, staff_id, staff:staff_id(name), services:service_id(name, price)')
       .eq('tenant_id', tid)
-      .order('start_time', { ascending: true })
+
+    if (view === 'calendar') {
+      const rangeEnd = new Date(weekStart)
+      rangeEnd.setDate(rangeEnd.getDate() + 7)
+      query = query.gte('start_time', weekStart.toISOString()).lt('start_time', rangeEnd.toISOString())
+    } else if (filter === 'pending') {
+      query = query.eq('status', 'pending')
+    } else if (filter === 'upcoming') {
+      query = query.gte('start_time', new Date().toISOString())
+    }
+    // filter === 'all' in list view is intentionally left unbounded by date,
+    // but still capped below so it degrades gracefully instead of silently
+    // dropping recent bookings off the end.
+
+    const { data, error } = await query.order('start_time', { ascending: true }).limit(2000)
+    if (error) {
+      console.error('Could not load bookings:', error.message)
+    }
     setBookings((data as any) || [])
   }
 
