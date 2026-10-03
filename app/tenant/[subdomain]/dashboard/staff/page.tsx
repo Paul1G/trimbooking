@@ -105,6 +105,16 @@ export default function StaffPage() {
     load()
   }, [params.subdomain, router])
 
+  // The owner's own access to their own shop is never "view only" — so the
+  // moment the email field in the form matches their login, pin accessLevel
+  // to admin (the radios below are shown disabled, reflecting this, rather
+  // than left clickable to something that wouldn't mean anything anyway).
+  useEffect(() => {
+    if (email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase()) {
+      setAccessLevel('admin')
+    }
+  }, [email, ownerEmail])
+
   async function loadStaff(tid: string) {
     const { data } = await supabase
       .from('staff')
@@ -182,6 +192,10 @@ export default function StaffPage() {
     // own staff portal (/staff) and see/enter their own earnings there —
     // which is the one place earnings are shown, by design.
     const isSelf = !!(email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase())
+    // Belt-and-suspenders alongside the useEffect that keeps accessLevel
+    // state itself pinned to 'admin' while isSelfInForm — the owner's own
+    // access is never "view only", whatever the radios last rendered as.
+    const effectiveAccessLevel = isSelf ? 'admin' : accessLevel
     let staffId = editingId
 
     if (editingId === 'new') {
@@ -196,7 +210,7 @@ export default function StaffPage() {
           working_hours: workingHours,
           breaks: breaks,
           email: email || null,
-          access_level: accessLevel,
+          access_level: effectiveAccessLevel,
           auto_confirm_bookings: autoConfirmBookings,
           employment_status: employmentStatus,
           user_id: isSelf ? ownerUserId : null,
@@ -222,7 +236,7 @@ export default function StaffPage() {
         working_hours: workingHours,
         breaks: breaks,
         email: email || null,
-        access_level: accessLevel,
+        access_level: effectiveAccessLevel,
         auto_confirm_bookings: autoConfirmBookings,
         employment_status: employmentStatus,
       }
@@ -359,6 +373,12 @@ export default function StaffPage() {
     )
   }
 
+  // This profile's portal email matches the owner's own login — see the
+  // isSelf comment in saveStaff() below. The owner already has full access
+  // to their own shop, so "User (view only)" vs "Admin" is a meaningless
+  // choice for them: it's locked to Admin, not left selectable.
+  const isSelfInForm = !!(email && ownerEmail && email.trim().toLowerCase() === ownerEmail.trim().toLowerCase())
+
   // Shown on its own in place of the whole team list while adding or
   // editing a member, so only that one person's data is on the page —
   // nothing else to scroll past or mistake it for.
@@ -421,25 +441,33 @@ export default function StaffPage() {
               <div className="field-group">
                 <label className="field-label">Portal access level</label>
                 <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', opacity: isSelfInForm ? 0.6 : 1 }}>
                     <input
                       type="radio"
                       name="accessLevel"
                       checked={accessLevel === 'user'}
+                      disabled={isSelfInForm}
                       onChange={() => setAccessLevel('user')}
                     />
                     User (view only)
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', opacity: isSelfInForm ? 0.6 : 1 }}>
                     <input
                       type="radio"
                       name="accessLevel"
                       checked={accessLevel === 'admin'}
+                      disabled={isSelfInForm}
                       onChange={() => setAccessLevel('admin')}
                     />
                     Admin (can edit own payments &amp; schedule)
                   </label>
                 </div>
+                {isSelfInForm && (
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0.5rem 0 0' }}>
+                    This is your own login, so you always have full (admin) access to your own shop —
+                    there&apos;s nothing to choose here.
+                  </p>
+                )}
 
                 {editingId !== 'new' && email.trim().toLowerCase() !== ownerEmail.trim().toLowerCase() && (
                   <div style={{ marginTop: '0.8rem' }}>
