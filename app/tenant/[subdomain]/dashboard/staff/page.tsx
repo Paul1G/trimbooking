@@ -514,6 +514,22 @@ export default function StaffPage() {
                     Add a portal email above (and save) before this person can be made a dashboard admin —
                     they need their own login to use the dashboard.
                   </p>
+                ) : isSelfInForm ? (
+                  // This profile is the owner's own account — they already
+                  // have full access to their own shop regardless of this
+                  // flag, so it's shown fixed on rather than offered as a
+                  // real choice (toggling it off would do nothing anyway;
+                  // resolveShopRole checks tenant.owner_id first).
+                  <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', opacity: 0.6 }}>
+                      <input type="checkbox" checked disabled />
+                      Give this person admin access to this dashboard
+                    </label>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                      This is your own login, so you always have full owner access to this dashboard —
+                      there&apos;s nothing to grant here.
+                    </p>
+                  </>
                 ) : viewerRole === 'owner' ? (
                   <>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer', marginTop: '0.4rem' }}>
