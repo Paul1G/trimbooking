@@ -47,7 +47,7 @@ const groups: Group[] = [
         feature: "Cost for a solo operator",
         us: "£20/month",
         revyfy: "£39.99/month",
-        fresha: "$19.95/month (USD)",
+        fresha: "£19.95/month",
         vagaro: "£20/month (UK pricing)",
         treatwell: "No official monthly fee",
         booksy: "£40/month + VAT",
@@ -57,7 +57,7 @@ const groups: Group[] = [
         feature: "Cost for 4 staff (approx.)",
         us: "£20/month",
         revyfy: "£39.99/month",
-        fresha: "~$59.80/month (USD)",
+        fresha: "~£64.80/month (£19.95 + 3 × £14.95)",
         vagaro: "~£44/month (£20 + 3 extra calendars, billed in USD)",
         treatwell: "No official monthly fee",
         booksy: "~£55/month + VAT (£40 + 3 × £5 staff)",
@@ -67,7 +67,7 @@ const groups: Group[] = [
         feature: "Commission per booking",
         us: "None",
         revyfy: "None",
-        fresha: "20% one-off on new clients, free on repeat",
+        fresha: "20% one-off on new clients (min £6), free on repeat",
         vagaro: "None",
         treatwell: "35% + VAT on new clients (~42% effective), free on repeat",
         booksy: "None, unless Boost marketing is switched on",
@@ -77,7 +77,7 @@ const groups: Group[] = [
         feature: "Payment processing fee",
         us: "Stripe's standard rate",
         revyfy: "Not specified",
-        fresha: "2.3–3.3% + $0.20–0.30 per transaction",
+        fresha: "2.79% + 20p online, 2.29% + 20p + 10p in person",
         vagaro: "Not specified for UK — US rate ~2.6% + $0.10",
         treatwell: "2.5% + VAT online, or 1.1% + 20p + VAT on card machine",
         booksy: "1.29% + 20p + VAT mobile, 0.99% + 20p + VAT tap-to-pay",
@@ -87,7 +87,7 @@ const groups: Group[] = [
         feature: "AI assistant",
         us: "—",
         revyfy: "+£24.99/month add-on",
-        fresha: "+$99.95/location add-on",
+        fresha: "+£99.95/location add-on",
         vagaro: "Included",
         treatwell: "AI receptionist mentioned, pricing not specified",
         booksy: "Not specified",
@@ -338,9 +338,9 @@ export default function ComparePage() {
           <p style={{ fontSize: "0.85rem", color: "var(--muted)" }}>
             Vagaro&apos;s £20/month base fee is a genuine UK price, but extra staff
             calendars and most add-ons are still billed in US dollars — so a multi-staff
-            Vagaro bill will move with the GBP/USD exchange rate. Fresha publishes its
-            core pricing in US dollars only; the figures above are its listed $ price, not
-            a currency conversion. Treatwell doesn&apos;t publish a UK subscription fee, so
+            Vagaro bill will move with the GBP/USD exchange rate. Fresha&apos;s figures
+            above are its own published UK (£) pricing, not a currency conversion.
+            Treatwell doesn&apos;t publish a UK subscription fee, so
             we&apos;ve shown none — some partner agreements reportedly include one, so
             check your own contract. Phorest doesn&apos;t publish pricing anywhere, so its
             figures above reflect contract terms and fee types third-party reviewers have
