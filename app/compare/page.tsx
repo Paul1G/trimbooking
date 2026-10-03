@@ -122,7 +122,7 @@ const groups: Group[] = [
       { feature: "Staff calendars, hours, breaks & holidays", us: "Yes", revyfy: "Yes", fresha: "Yes", vagaro: "Yes", treatwell: "Not specified", booksy: "Yes", phorest: "Yes" },
       { feature: "Accept/decline or auto-confirm bookings", us: "Yes", revyfy: "Automatic confirmation", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified", booksy: "Not specified", phorest: "Not specified" },
       { feature: "Parallel treatment (e.g. colour processing time)", us: "Yes", revyfy: "Yes", fresha: "Not specified", vagaro: "Not specified", treatwell: "Not specified", booksy: "Not specified", phorest: "Not specified" },
-      { feature: "Waitlist for cancelled slots", us: "—", revyfy: "Yes", fresha: "Yes", vagaro: "Not specified", treatwell: "Not specified", booksy: "Yes", phorest: "Not specified" },
+      { feature: "Waitlist for cancelled slots", us: "Yes, auto-offered by email with a 24h accept window", revyfy: "Yes", fresha: "Yes", vagaro: "Not specified", treatwell: "Not specified", booksy: "Yes", phorest: "Not specified" },
       { feature: "Room & equipment scheduling", us: "—", revyfy: "Yes", fresha: "Not specified", vagaro: "Yes", treatwell: "Not specified", booksy: "Not specified", phorest: "Not specified" },
       { feature: "SMS reminders", us: "—", revyfy: "Yes", fresha: "Yes, free allowance then pay-per-text", vagaro: "Not specified", treatwell: "Not specified", booksy: "Yes, 500 free/month then 5p + VAT", phorest: "Yes, paid above bundle allowance" },
       { feature: "Email confirmations & reminders", us: "Yes", revyfy: "Yes", fresha: "Yes, free allowance then pay-per-email", vagaro: "Yes, 1,000 free/month", treatwell: "Not specified", booksy: "Yes", phorest: "Yes" },
