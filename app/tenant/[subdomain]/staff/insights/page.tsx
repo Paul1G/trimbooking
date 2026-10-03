@@ -19,6 +19,11 @@ export default function MyInsightsPage() {
   const [name, setName] = useState('')
   const [data, setData] = useState<{ bookings: InsightBooking[]; capacity: CapacityInputs } | null>(null)
   const [error, setError] = useState('')
+  // Employed staff don't see money in their own /staff portal (their owner
+  // sees their earnings instead, from the dashboard) — this carries the
+  // same rule through to their insights page, which otherwise shows takings
+  // unconditionally.
+  const [isEmployed, setIsEmployed] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -47,6 +52,10 @@ export default function MyInsightsPage() {
 
       setBrandColor(tenant.brand_color)
       setName(me.name)
+
+      const { data: statusData } = await supabase.rpc('staff_get_my_employment_status', { p_tenant_id: tenant.id })
+      if (statusData === 'employed') setIsEmployed(true)
+
       try {
         setData(await loadMyInsights(tenant, me.id))
       } catch (e) {
@@ -63,7 +72,11 @@ export default function MyInsightsPage() {
 
         <div className="tenant-hero" style={{ textAlign: 'left', marginTop: '1rem' }}>
           <h1>{name ? `${name}'s insights` : 'My insights'}</h1>
-          <p>Your own takings, how full your diary is, your best weeks and your regulars. Only you can see this.</p>
+          <p>
+            {isEmployed
+              ? 'How full your diary is, your regulars, and your busy and quiet times. Only you can see this.'
+              : 'Your own takings, how full your diary is, your best weeks and your regulars. Only you can see this.'}
+          </p>
         </div>
 
         {error && <p className="error-text">{error}</p>}
@@ -72,7 +85,7 @@ export default function MyInsightsPage() {
           <InsightsView
             bookings={data.bookings}
             capacity={data.capacity}
-            showMoney
+            showMoney={!isEmployed}
             showContacts={false}
             showStaffTable={false}
           />
