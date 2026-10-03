@@ -151,6 +151,11 @@ export default function DashboardPage() {
             <div className="settings-tile-title">Bookings</div>
             <div className="settings-tile-sub">View and manage appointments</div>
           </Link>
+          <Link href="/dashboard/insights" className="settings-tile">
+            <div className="settings-tile-icon">📈</div>
+            <div className="settings-tile-title">Insights</div>
+            <div className="settings-tile-sub">Takings, best weeks, top clients, busy times</div>
+          </Link>
           <Link href="/dashboard/customers" className="settings-tile">
             <div className="settings-tile-icon">🙋</div>
             <div className="settings-tile-title">Customers</div>

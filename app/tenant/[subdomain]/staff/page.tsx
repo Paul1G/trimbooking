@@ -477,6 +477,14 @@ export default function StaffPortalPage() {
           </div>
         </div>
 
+        <Link href="/staff/insights" className="card" style={{ marginBottom: '1.5rem' }}>
+          <div>
+            <div className="card-title">📈 My insights</div>
+            <div className="card-sub">Week on week, best week, top clients, who you haven&apos;t seen lately, busy and quiet times</div>
+          </div>
+          <span style={{ color: 'var(--brand)', fontWeight: 700 }}>→</span>
+        </Link>
+
         <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem', marginBottom: '1.5rem' }}>
           <div style={{ fontWeight: 600 }}>Get paid directly</div>
           {connectStatus === 'connected' ? (
