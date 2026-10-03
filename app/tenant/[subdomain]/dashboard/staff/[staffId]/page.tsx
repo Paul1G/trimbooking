@@ -43,14 +43,21 @@ function startOfWeek(d: Date): Date {
 }
 
 // This page shows the OWNER a staff member's booking schedule — who's
-// booked in, when, for what, its status, and (per booking, when they open
-// it) the treatment's price and what's been paid so far, which the owner
-// can amend directly. It deliberately does NOT show any earnings summary —
-// no today's/month's expected vs. actual totals, no running revenue — those
-// stay visible only to the staff member themselves, from their own portal
-// (staff_get_my_bookings / staff_update_my_payment). Reads go through
-// owner_get_staff_schedule and writes through owner_update_staff_payment
-// (both SECURITY DEFINER, checked server-side against tenant ownership).
+// booked in, when, for what, and its status. For a SELF-EMPLOYED member it
+// deliberately does NOT show any earnings summary — no today's/month's
+// expected vs. actual totals, no running revenue, no per-booking price or
+// payment — those stay visible (and editable) only to the staff member
+// themselves, from their own portal (staff_get_my_bookings /
+// staff_update_my_payment), via owner_get_staff_schedule (no price/amount
+// columns at all).
+//
+// For an EMPLOYED member, it's the other way round: they don't see money in
+// their own /staff portal, so the owner sees their full earnings here
+// instead — today's/month's expected vs. actual, and the per-booking price
+// + amount-paid editor — via owner_get_staff_bookings /
+// owner_update_staff_payment, which only ever succeed (checked inside the
+// functions themselves, not just by what this page chooses to call) when
+// the target staff member is actually marked 'employed'.
 export default function StaffCalendarPage() {
   const router = useRouter()
   const params = useParams()
@@ -59,7 +66,12 @@ export default function StaffCalendarPage() {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [brandColor, setBrandColor] = useState('#000000')
   const [staffName, setStaffName] = useState('')
+  const [isEmployed, setIsEmployed] = useState(false)
   const [checking, setChecking] = useState(true)
+
+  const [monthExpected, setMonthExpected] = useState(0)
+  const [monthActual, setMonthActual] = useState(0)
+  const [monthLoading, setMonthLoading] = useState(false)
 
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
 
@@ -100,7 +112,7 @@ export default function StaffCalendarPage() {
 
       const { data: staff } = await supabase
         .from('staff')
-        .select('name, tenant_id')
+        .select('name, tenant_id, employment_status')
         .eq('id', staffId)
         .single()
 
@@ -112,6 +124,7 @@ export default function StaffCalendarPage() {
       setTenantId(tenant.id)
       setBrandColor(tenant.brand_color)
       setStaffName(staff.name)
+      setIsEmployed(staff.employment_status === 'employed')
       setChecking(false)
     }
     load()
@@ -121,13 +134,25 @@ export default function StaffCalendarPage() {
     if (!tenantId) return
     loadDay(selectedDate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId, selectedDate])
+  }, [tenantId, selectedDate, isEmployed])
 
   useEffect(() => {
     if (!tenantId) return
     loadWeek(weekStart)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId, weekStart])
+  }, [tenantId, weekStart, isEmployed])
+
+  useEffect(() => {
+    if (!tenantId || !isEmployed) return
+    loadMonth(selectedDate)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId, selectedDate, isEmployed])
+
+  // Employed → owner_get_staff_bookings (amount_paid + service_price
+  // included; only succeeds server-side for an employed staff member
+  // anyway). Self-employed → owner_get_staff_schedule, which has no
+  // price/amount columns at all, same as before this feature existed.
+  const scheduleRpc = isEmployed ? 'owner_get_staff_bookings' : 'owner_get_staff_schedule'
 
   async function loadDay(dateStr: string) {
     if (!tenantId) return
@@ -135,7 +160,7 @@ export default function StaffCalendarPage() {
     const dayStart = new Date(dateStr + 'T00:00:00')
     const dayEnd = new Date(dateStr + 'T23:59:59')
 
-    const { data, error } = await supabase.rpc('owner_get_staff_schedule', {
+    const { data, error } = await supabase.rpc(scheduleRpc, {
       p_tenant_id: tenantId,
       p_staff_id: staffId,
       p_range_start: dayStart.toISOString(),
@@ -155,7 +180,7 @@ export default function StaffCalendarPage() {
     rangeEnd.setDate(rangeEnd.getDate() + 6)
     rangeEnd.setHours(23, 59, 59, 999)
 
-    const { data, error } = await supabase.rpc('owner_get_staff_schedule', {
+    const { data, error } = await supabase.rpc(scheduleRpc, {
       p_tenant_id: tenantId,
       p_staff_id: staffId,
       p_range_start: rangeStart.toISOString(),
@@ -165,6 +190,33 @@ export default function StaffCalendarPage() {
     setWeekBookings((!error && data) || [])
     setWeekError(error ? error.message : '')
     setLoadingWeek(false)
+  }
+
+  async function loadMonth(dateStr: string) {
+    if (!tenantId) return
+    setMonthLoading(true)
+    const d = new Date(dateStr + 'T00:00:00')
+    const monthStart = new Date(d.getFullYear(), d.getMonth(), 1)
+    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59)
+
+    const { data } = await supabase.rpc('owner_get_staff_bookings', {
+      p_tenant_id: tenantId,
+      p_staff_id: staffId,
+      p_range_start: monthStart.toISOString(),
+      p_range_end: monthEnd.toISOString(),
+    })
+
+    const rows = (data as Booking[]) || []
+    let expected = 0
+    let actual = 0
+    for (const r of rows) {
+      if (r.status !== 'confirmed') continue
+      expected += r.service_price || 0
+      actual += r.amount_paid != null ? Number(r.amount_paid) : (r.service_price || 0)
+    }
+    setMonthExpected(expected)
+    setMonthActual(actual)
+    setMonthLoading(false)
   }
 
   function changeDay(offset: number) {
@@ -224,6 +276,13 @@ export default function StaffCalendarPage() {
     )
   }
 
+  const dayExpected = dayBookings
+    .filter((b) => b.status === 'confirmed')
+    .reduce((sum, b) => sum + (b.service_price || 0), 0)
+  const dayActual = dayBookings
+    .filter((b) => b.status === 'confirmed')
+    .reduce((sum, b) => sum + (b.amount_paid != null ? Number(b.amount_paid) : (b.service_price || 0)), 0)
+
   const dayLabel = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long',
   })
@@ -266,8 +325,37 @@ export default function StaffCalendarPage() {
 
         <div className="tenant-hero" style={{ textAlign: 'left', marginTop: '1rem' }}>
           <h1>{staffName}&apos;s calendar</h1>
-          <p>Their booking schedule. Click an appointment to see its price and record what was paid — running totals and earnings stay in {staffName}&apos;s own portal.</p>
+          {isEmployed ? (
+            <p>
+              {staffName} is marked employed, so their earnings are shown here instead of in their own
+              portal. Click an appointment to see or record what was paid.
+            </p>
+          ) : (
+            <p>Their booking schedule. Click an appointment to see its price and record what was paid — running totals and earnings stay in {staffName}&apos;s own portal.</p>
+          )}
         </div>
+
+        {isEmployed && (
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+            <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
+              <div className="card-sub">Today&apos;s expected</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--brand)' }}>{money(dayExpected)}</div>
+            </div>
+            <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
+              <div className="card-sub">Today&apos;s actual</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{money(dayActual)}</div>
+            </div>
+            <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
+              <div className="card-sub">This month so far (actual)</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>
+                {monthLoading ? '...' : money(monthActual)}
+              </div>
+              <div className="card-sub" style={{ marginTop: 0 }}>
+                Expected: {monthLoading ? '...' : money(monthExpected)}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
           <button
@@ -424,38 +512,40 @@ export default function StaffCalendarPage() {
                 {selected.status}
               </div>
 
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
-                {selected.service_price != null && (
-                  <p className="card-sub" style={{ margin: '0 0 0.5rem' }}>
-                    Treatment cost: <strong>{money(selected.service_price)}</strong>
-                  </p>
-                )}
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', display: 'block', marginBottom: '0.3rem' }}>
-                  Amount paid
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>£</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={amountInput}
-                    onChange={(e) => setAmountInput(e.target.value)}
-                    placeholder="0.00"
-                    style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
-                  />
-                  <button
-                    onClick={saveAmount}
-                    disabled={savingAmount}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    {savingAmount ? 'Saving...' : 'Save'}
-                  </button>
+              {isEmployed && (
+                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                  {selected.service_price != null && (
+                    <p className="card-sub" style={{ margin: '0 0 0.5rem' }}>
+                      Treatment cost: <strong>{money(selected.service_price)}</strong>
+                    </p>
+                  )}
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#666', display: 'block', marginBottom: '0.3rem' }}>
+                    Amount paid
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>£</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={amountInput}
+                      onChange={(e) => setAmountInput(e.target.value)}
+                      placeholder="0.00"
+                      style={{ width: 90, padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: '0.9rem' }}
+                    />
+                    <button
+                      onClick={saveAmount}
+                      disabled={savingAmount}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--brand)', background: 'var(--brand)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      {savingAmount ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                  {amountError && (
+                    <p style={{ color: '#991b1b', fontSize: '0.82rem', margin: '0.5rem 0 0' }}>{amountError}</p>
+                  )}
                 </div>
-                {amountError && (
-                  <p style={{ color: '#991b1b', fontSize: '0.82rem', margin: '0.5rem 0 0' }}>{amountError}</p>
-                )}
-              </div>
+              )}
 
               <CustomerHistoryView
                 tenantId={tenantId}

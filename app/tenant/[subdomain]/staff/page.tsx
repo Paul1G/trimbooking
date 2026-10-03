@@ -63,6 +63,12 @@ export default function StaffPortalPage() {
   const [checking, setChecking] = useState(true)
   const [me, setMe] = useState<MyData | null>(null)
   const [isOwnerToo, setIsOwnerToo] = useState(false)
+  // 'self_employed' sees and records their own earnings here, same as
+  // always. 'employed' sees their schedule only — no prices, payments or
+  // earnings totals anywhere on this page; their owner sees those instead,
+  // from the Calendar page on the dashboard (owner_get_staff_bookings).
+  const [employmentStatus, setEmploymentStatus] = useState<'self_employed' | 'employed'>('self_employed')
+  const [otherShops, setOtherShops] = useState<{ tenant_id: string; tenant_name: string; subdomain: string; role: string }[]>([])
 
   const [selectedDate, setSelectedDate] = useState(() => toDateStr(new Date()))
   const [dayBookings, setDayBookings] = useState<Booking[]>([])
@@ -129,6 +135,13 @@ export default function StaffPortalPage() {
       // their account) — in that case, show a way back to the dashboard,
       // since a genuinely separate staff member has no dashboard to go back to.
       setIsOwnerToo(tenant.owner_id === user.id)
+
+      const { data: statusData } = await supabase.rpc('staff_get_my_employment_status', { p_tenant_id: tenant.id })
+      if (statusData === 'employed') setEmploymentStatus('employed')
+
+      const { data: shops } = await supabase.rpc('my_shop_associations')
+      setOtherShops(((shops as typeof otherShops) || []).filter((s) => s.subdomain !== params.subdomain))
+
       setChecking(false)
     }
     load()
@@ -427,6 +440,7 @@ export default function StaffPortalPage() {
   if (!me) return null
 
   const isAdmin = me.access_level === 'admin'
+  const isEmployed = employmentStatus === 'employed'
 
   const dayExpected = dayBookings
     .filter((b) => b.status === 'confirmed')
@@ -457,25 +471,34 @@ export default function StaffPortalPage() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1.5rem 0' }}>
-          <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
-            <div className="card-sub">Today&apos;s expected</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--brand)' }}>{money(dayExpected)}</div>
+        {isEmployed ? (
+          <div className="card" style={{ cursor: 'default', margin: '1.5rem 0' }}>
+            <p className="card-sub" style={{ margin: 0 }}>
+              Your earnings are managed by the shop — your schedule is below, but prices and payments
+              aren&apos;t shown here.
+            </p>
           </div>
-          <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
-            <div className="card-sub">Today&apos;s actual</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{money(dayActual)}</div>
-          </div>
-          <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
-            <div className="card-sub">This month so far (actual)</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>
-              {monthLoading ? '...' : money(monthActual)}
+        ) : (
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1.5rem 0' }}>
+            <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
+              <div className="card-sub">Today&apos;s expected</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--brand)' }}>{money(dayExpected)}</div>
             </div>
-            <div className="card-sub" style={{ marginTop: 0 }}>
-              Expected: {monthLoading ? '...' : money(monthExpected)}
+            <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
+              <div className="card-sub">Today&apos;s actual</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{money(dayActual)}</div>
+            </div>
+            <div className="card" style={{ cursor: 'default', flex: '1 1 200px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem' }}>
+              <div className="card-sub">This month so far (actual)</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>
+                {monthLoading ? '...' : money(monthActual)}
+              </div>
+              <div className="card-sub" style={{ marginTop: 0 }}>
+                Expected: {monthLoading ? '...' : money(monthExpected)}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <Link href="/staff/insights" className="card" style={{ marginBottom: '1.5rem' }}>
           <div>
@@ -510,6 +533,7 @@ export default function StaffPortalPage() {
           )}
         </div>
 
+        {!isEmployed && (
         <div className="card" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', marginBottom: '1.5rem' }}>
           <div style={{ fontWeight: 600 }}>Download your earnings report</div>
 
@@ -582,6 +606,7 @@ export default function StaffPortalPage() {
             <p style={{ color: '#991b1b', fontSize: '0.85rem', margin: 0 }}>{reportError}</p>
           )}
         </div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
           <button
@@ -622,7 +647,7 @@ export default function StaffPortalPage() {
                 <div style={{ flex: '1 1 200px' }}>
                   <div className="card-title">{time} · {b.customer_name}</div>
                   <div className="card-sub">
-                    {b.service_name} {b.service_price != null && `· expected ${money(b.service_price)}`}
+                    {b.service_name} {!isEmployed && b.service_price != null && `· expected ${money(b.service_price)}`}
                   </div>
                 </div>
                 <span
@@ -633,7 +658,7 @@ export default function StaffPortalPage() {
                 >
                   {b.status}
                 </span>
-                {b.status === 'confirmed' && (
+                {!isEmployed && b.status === 'confirmed' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {isAdmin ? (
                       <>
@@ -723,6 +748,23 @@ export default function StaffPortalPage() {
             )
           })}
         </div>
+
+        {otherShops.length > 0 && (
+          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Your other shops</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {otherShops.map((s) => (
+                <a
+                  key={s.tenant_id}
+                  href={`https://${s.subdomain}.trimbooking.co.uk/${s.role === 'owner' ? 'dashboard' : 'staff'}`}
+                  style={{ fontSize: '0.88rem', color: 'var(--ink)' }}
+                >
+                  {s.tenant_name} <span style={{ color: 'var(--text-muted)' }}>· {s.role === 'owner' ? 'Owner' : 'Staff'}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

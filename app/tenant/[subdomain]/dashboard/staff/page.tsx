@@ -22,6 +22,7 @@ type Staff = {
   invited_at: string | null
   auto_confirm_bookings: boolean | null
   is_shop_admin: boolean | null
+  employment_status: 'self_employed' | 'employed' | null
 }
 
 type Service = {
@@ -50,6 +51,7 @@ export default function StaffPage() {
   const [accessLevel, setAccessLevel] = useState<'user' | 'admin'>('user')
   const [autoConfirmBookings, setAutoConfirmBookings] = useState(false)
   const [isShopAdmin, setIsShopAdmin] = useState(false)
+  const [employmentStatus, setEmploymentStatus] = useState<'self_employed' | 'employed'>('self_employed')
   const [savingShopAdmin, setSavingShopAdmin] = useState(false)
   const [shopAdminError, setShopAdminError] = useState('')
   const [error, setError] = useState('')
@@ -125,6 +127,7 @@ export default function StaffPage() {
     setAccessLevel('user')
     setAutoConfirmBookings(false)
     setIsShopAdmin(false)
+    setEmploymentStatus('self_employed')
     setShopAdminError('')
     setError('')
   }
@@ -141,6 +144,7 @@ export default function StaffPage() {
     setAccessLevel(member.access_level === 'admin' ? 'admin' : 'user')
     setAutoConfirmBookings(!!member.auto_confirm_bookings)
     setIsShopAdmin(!!member.is_shop_admin)
+    setEmploymentStatus(member.employment_status === 'employed' ? 'employed' : 'self_employed')
     setShopAdminError('')
     setError('')
 
@@ -194,6 +198,7 @@ export default function StaffPage() {
           email: email || null,
           access_level: accessLevel,
           auto_confirm_bookings: autoConfirmBookings,
+          employment_status: employmentStatus,
           user_id: isSelf ? ownerUserId : null,
         })
         .select('id')
@@ -219,6 +224,7 @@ export default function StaffPage() {
         email: email || null,
         access_level: accessLevel,
         auto_confirm_bookings: autoConfirmBookings,
+        employment_status: employmentStatus,
       }
       if (isSelf) updatePayload.user_id = ownerUserId
 
@@ -510,6 +516,35 @@ export default function StaffPage() {
             </div>
 
             <div className="field-group">
+              <label className="field-label">Employment type</label>
+              <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                  <input
+                    type="radio"
+                    name="employmentStatus"
+                    checked={employmentStatus === 'self_employed'}
+                    onChange={() => setEmploymentStatus('self_employed')}
+                  />
+                  Self-employed
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                  <input
+                    type="radio"
+                    name="employmentStatus"
+                    checked={employmentStatus === 'employed'}
+                    onChange={() => setEmploymentStatus('employed')}
+                  />
+                  Employed
+                </label>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.4rem 0 0' }}>
+                {employmentStatus === 'employed'
+                  ? "This person won't see prices, payments or earnings anywhere in their own staff portal — just their schedule. You'll see their full earnings and a running dashboard for them from their Calendar page instead."
+                  : "This person sees and records their own earnings in their own staff portal, same as today. You'll see their schedule but not their earnings figures."}
+              </p>
+            </div>
+
+            <div className="field-group">
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -600,6 +635,7 @@ export default function StaffPage() {
                       <div className="card-title">{member.name}</div>
                       <div className="card-sub">
                         {member.role}
+                        {member.employment_status === 'employed' ? ' · Employed' : ''}
                         {member.auto_confirm_bookings ? ' · Auto-confirms bookings' : ''}
                         {member.is_shop_admin ? ' · Dashboard admin' : ''}
                       </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { slugifySubdomain, validateSubdomain } from '@/lib/subdomain'
 import { sendWelcomeEmail } from '@/lib/email'
@@ -75,11 +76,45 @@ export async function POST(req: NextRequest) {
     email_confirm: true,
   })
 
+  // One auth login per email is a Supabase constraint, not a TrimBooking
+  // one — the same person can already own one shop and be invited as staff
+  // at another (app/api/staff/invite/route.ts reuses their existing login
+  // for that). This is the owner-signup equivalent: if that email already
+  // has an account anywhere (another shop they own, or a shop they're staff
+  // at), reuse it as the new tenant's owner instead of failing outright —
+  // but only once the submitted password is confirmed to actually be
+  // theirs. Without that check, anyone could type in someone else's email
+  // here and attach a brand new shop to that person's identity.
+  let ownerId: string
+  let createdNewAuthUser: boolean
+
   if (createUserError || !created.user) {
-    const message = createUserError?.message?.includes('already been registered')
-      ? 'An account already exists for that email.'
-      : createUserError?.message || 'Could not create your account.'
-    return NextResponse.json({ error: message }, { status: 400 })
+    const alreadyExists = /already been registered|already exists/i.test(createUserError?.message || '')
+    if (!alreadyExists) {
+      return NextResponse.json({ error: createUserError?.message || 'Could not create your account.' }, { status: 400 })
+    }
+
+    const verifyClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const { data: signInData, error: signInError } = await verifyClient.auth.signInWithPassword({ email, password })
+
+    if (signInError || !signInData.user) {
+      return NextResponse.json(
+        {
+          error:
+            "An account already exists for that email, and that password doesn't match it. " +
+            'Log in and add a new shop from there, or use a different email for this one.',
+        },
+        { status: 400 }
+      )
+    }
+
+    ownerId = signInData.user.id
+    createdNewAuthUser = false
+  } else {
+    ownerId = created.user.id
+    createdNewAuthUser = true
   }
 
   const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -90,7 +125,7 @@ export async function POST(req: NextRequest) {
     .insert({
       name: shopName,
       subdomain,
-      owner_id: created.user.id,
+      owner_id: ownerId,
       brand_color: '#111111',
       text_color: '#111111',
       background_color: '#ffffff',
@@ -106,8 +141,11 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (tenantError) {
-    // Roll back the auth user so a failed signup doesn't leave an orphaned account.
-    await supabaseAdmin.auth.admin.deleteUser(created.user.id)
+    // Roll back the auth user so a failed signup doesn't leave an orphaned
+    // account — but only when this request created it. A reused, pre-existing
+    // account (someone adding a second shop to their own login) must never be
+    // deleted just because THIS tenant insert failed.
+    if (createdNewAuthUser) await supabaseAdmin.auth.admin.deleteUser(ownerId)
     return NextResponse.json({ error: 'Could not set up your shop: ' + tenantError.message }, { status: 500 })
   }
 
@@ -116,8 +154,11 @@ export async function POST(req: NextRequest) {
   // failure here rolls back everything just like a failed tenant insert does.
   const domainResult = await addDomainToVercelProject(`${subdomain}.trimbooking.co.uk`)
   if (!domainResult.ok) {
-    await supabaseAdmin.from('tenants').delete().eq('owner_id', created.user.id)
-    await supabaseAdmin.auth.admin.deleteUser(created.user.id)
+    // Delete by this specific tenant's id, never by owner_id — with account
+    // reuse, owner_id may already belong to other shops this same person
+    // owns, and deleting by owner_id would wipe those out too.
+    await supabaseAdmin.from('tenants').delete().eq('id', tenantRow.id)
+    if (createdNewAuthUser) await supabaseAdmin.auth.admin.deleteUser(ownerId)
     return NextResponse.json(
       { error: 'Could not set up your shop\'s web address: ' + (domainResult.error || 'unknown error') },
       { status: 500 }

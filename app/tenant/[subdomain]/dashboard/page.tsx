@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [staffCount, setStaffCount] = useState<number | null>(null)
   const [disabled, setDisabled] = useState(false)
   const [role, setRole] = useState<ShopRole | null>(null)
+  const [otherShops, setOtherShops] = useState<{ tenant_id: string; tenant_name: string; subdomain: string; role: string }[]>([])
 
   useEffect(() => {
     async function checkAccess() {
@@ -60,8 +61,14 @@ export default function DashboardPage() {
       ])
       setServiceCount(services ?? 0)
       setStaffCount(staff ?? 0)
+
+      // This login's other shops, by name — shown only to this person
+      // themselves, never surfaced on a staff profile to anyone else.
+      const { data: shops } = await supabase.rpc('my_shop_associations')
+      setOtherShops(((shops as typeof otherShops) || []).filter((s) => s.subdomain !== params.subdomain))
     }
     checkAccess()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.subdomain, router])
 
   async function handleLogout() {
@@ -196,6 +203,23 @@ export default function DashboardPage() {
             </Link>
           )}
         </div>
+
+        {otherShops.length > 0 && (
+          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #eee' }}>
+            <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Your other shops</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {otherShops.map((s) => (
+                <a
+                  key={s.tenant_id}
+                  href={`https://${s.subdomain}.trimbooking.co.uk/${s.role === 'owner' ? 'dashboard' : 'staff'}`}
+                  style={{ fontSize: '0.88rem', color: 'var(--ink)' }}
+                >
+                  {s.tenant_name} <span style={{ color: 'var(--text-muted)' }}>· {s.role === 'owner' ? 'Owner' : 'Staff'}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button
           className="btn-primary"
