@@ -130,7 +130,7 @@ export default function Home() {
         </p>
         <div className="home-hero-actions" style={{ marginTop: '0.5rem' }}>
           <Link href="/demo-booking" className="btn-outline">👤 Customer view demo</Link>
-          <Link href="/demo-dashboard" className="btn-outline">🏠 Owner view demo</Link>
+          <Link href="/demo-dashboard" className="btn-outline">✂️ Owner view demo</Link>
         </div>
       </header>
 
